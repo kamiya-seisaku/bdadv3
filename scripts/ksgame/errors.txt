@@ -1,0 +1,27 @@
+Add-on not loaded: "ks_game", cause:
+Traceback (most recent call last):
+  File "c:\bin\blender-4.1.0-windows-x64\4.1\scripts\startup\bl_operators\userpref.py", line 450, in execute
+    mod = addon_utils.enable(self.module, default_set=True, handle_error=err_cb)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\bin\blender-4.1.0-windows-x64\4.1\scripts\modules\addon_utils.py", line 329, in enable
+    if mod and os.path.exists(mod.__file__):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen genericpath>", line 19, in exists
+TypeError: stat: path should be string, bytes, os.PathLike or integer, not NoneType
+Error: Python: Traceback (most recent call last):
+  File "<frozen genericpath>", line 19, in exists
+TypeError: stat: path should be string, bytes, os.PathLike or integer, not NoneType
+Location: c:\bin\blender-4.1.0-windows-x64\4.1\scripts\modules\bpy\ops.py:109
+Traceback (most recent call last):
+  File "c:\Users\kazuo\.vscode\extensions\jacqueslucke.blender-development-0.0.20\pythonFiles\include\blender_vscode\load_addons.py", line 35, in load
+    bpy.ops.preferences.addon_enable(module=module_name)
+  File "c:\bin\blender-4.1.0-windows-x64\4.1\scripts\modules\bpy\ops.py", line 109, in __call__
+    ret = _op_call(self.idname_py(), kw)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Error: Python: Traceback (most recent call last):
+  File "<frozen genericpath>", line 19, in exists
+TypeError: stat: path should be string, bytes, os.PathLike or integer, not NoneType
+Location: c:\bin\blender-4.1.0-windows-x64\4.1\scripts\modules\bpy\ops.py:109
+
+Sending: {'type': 'enableFailure', 'addonPath': 'C:\\codes\\bdadv-upbge\\scripts\\ks_game'}
+Read blend: "C:\codes\bdadv-upbge\game14.blend"
