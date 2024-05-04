@@ -13,7 +13,7 @@ class PlayAndBlendActionsOperator(bpy.types.Operator):
     def execute(self, context):
         # Initialize loop count and frame number variables
         loop_count = 0
-        frame_number = 0
+        frame_number = bpy.context.scene.frame_current
         bpy.ops.screen.animation_play()
         return {'FINISHED'}
 
@@ -49,9 +49,6 @@ class PlayAndBlendActionsOperator(bpy.types.Operator):
                 strip.blend_in = 10
                 strip.blend_out = 10
 
-            # Update loop count and frame number variables
-            self.loop_count += 1
-            self.frame_number = bpy.context.scene.frame_current
         return {'FINISHED'}
 
 #--------------------------------------------
@@ -61,14 +58,14 @@ class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
     bl_label = "Modal Timer Operator"
     
-    _timer = None
+    # _timer = None
 
     def modal(self, context, event):
         if event.type in {'RIGHTMOUSE', 'ESC'}:
             self.cancel(context)
             return {'CANCELLED'}
 
-        if event.type == 'TIMER':
+        if event.type == 'FRAME_CHANGE_POST':
             # change theme color, silly!
             color = context.preferences.themes[0].view_3d.space.gradients.high_gradient
             color.s = 1
@@ -79,25 +76,27 @@ class ModalTimerOperator(bpy.types.Operator):
 
     def execute(self, context):
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
+        # self._timer = wm.event_timer_add(0.1, window=context.window)
+        bpy.app.handlers.frame_change_post.append(self.modal)
         wm.modal_handler_add(self)
         PlayAndBlendActionsOperator.execute(self, context)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
         wm = context.window_manager
-        wm.event_timer_remove(self._timer)
+        # wm.event_timer_remove(self._timer)
+        bpy.app.handlers.frame_change_post.remove(self.modal)
 
 
 #--------------------------------------------
 # Register ModalTimerOperator in layout menu
 def menu_func(self, context):
-    for ws in {self.layout, self.scripting, self.animation}
-        ws.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
+    # for ws in {self.layout, self.scripting, self.animation}
+    #     ws.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
 
-#    self.layout.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-#    self.scripting.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-#    self.animation.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
+   self.layout.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
+   self.scripting.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
+   self.animation.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
 
 
 def register():
@@ -112,6 +111,8 @@ def unregister():
     bpy.utils.unregister_class(PlayAndBlendActionsOperator)
     bpy.types.VIEW3D_MT_view.remove(menu_func)
 
+# Todo: [debug]
+register()
 
 if __name__ == "__main__":
     register()
