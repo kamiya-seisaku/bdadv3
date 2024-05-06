@@ -65,36 +65,37 @@ class PlayAndBlendActionsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
     def modal(self, context, event):
-        text_obj = bpy.data.objects.get('ui.Text.003')
-        frame_number = bpy.context.scene.frame_current
-        text_obj.data.body = str(f"frame: {frame_number}")
-        obj = context.object
+        # moving to "ModalTimerOperator", eventually dumped
+        # text_obj = bpy.data.objects.get('ui.Text.003')
+        # frame_number = bpy.context.scene.frame_current
+        # text_obj.data.body = str(f"frame: {frame_number}")
+        # obj = context.object
 
-        # Ensure the object is an armature with animation data
-        if obj.type == 'ARMATURE' and obj.animation_data:
+        # # Ensure the object is an armature with animation data
+        # if obj.type == 'ARMATURE' and obj.animation_data:
 
-            # Disable existing 'A' and 'D' key bindings
-            km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
-            for kmi in km.keymap_items:
-                if kmi.type in {'A', 'D'}:
-                    km.keymap_items.remove(kmi)
+        #     # Disable existing 'A' and 'D' key bindings
+        #     km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+        #     for kmi in km.keymap_items:
+        #         if kmi.type in {'A', 'D'}:
+        #             km.keymap_items.remove(kmi)
 
-            # Play 'bike.ride' action
-            bike_ride = bpy.data.actions.get('bike.ride')
-            if bike_ride:
-                obj.animation_data.action = bike_ride
+        #     # Play 'bike.ride' action
+        #     bike_ride = bpy.data.actions.get('bike.ride')
+        #     if bike_ride:
+        #         obj.animation_data.action = bike_ride
 
-            # Blend 'bike.turn.l' action when a key is pressed
-            bike_turn_l = bpy.data.actions.get('bike.turn.l')
-            if bike_turn_l and context.window.event.keyname == 'A':
-                # Create a new NLA track and add the action strip
-                track = obj.animation_data.nla_tracks.new()
-                strip = track.strips.new('bike.turn.l', 1, bike_turn_l)
+        #     # Blend 'bike.turn.l' action when a key is pressed
+        #     bike_turn_l = bpy.data.actions.get('bike.turn.l')
+        #     if bike_turn_l and context.window.event.keyname == 'A':
+        #         # Create a new NLA track and add the action strip
+        #         track = obj.animation_data.nla_tracks.new()
+        #         strip = track.strips.new('bike.turn.l', 1, bike_turn_l)
 
-                # Set blending options
-                strip.blend_type = 'ADD'
-                strip.blend_in = 10
-                strip.blend_out = 10
+        #         # Set blending options
+        #         strip.blend_type = 'ADD'
+        #         strip.blend_in = 10
+        #         strip.blend_out = 10
 
         return {'FINISHED'}
 
@@ -118,8 +119,42 @@ class ModalTimerOperator(bpy.types.Operator):
             color = context.preferences.themes[0].view_3d.space.gradients.high_gradient
             color.s = 1
             color.h += 0.01
-            PlayAndBlendActionsOperator.modal(self, context, event)
-            
+
+
+            # PlayAndBlendActionsOperator.modal(self, context, event)
+            # ----------------------------------------------------
+            # moved from PlayAndBlendActionsOperator.modal
+            text_obj = bpy.data.objects.get('ui.Text.003')
+            frame_number = bpy.context.scene.frame_current
+            text_obj.data.body = str(f"frame: {frame_number}")
+            obj = context.object
+
+            # Ensure the object is an armature with animation data
+            if obj.type == 'ARMATURE' and obj.animation_data:
+
+                # Disable existing 'A' and 'D' key bindings
+                km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+                for kmi in km.keymap_items:
+                    if kmi.type in {'A', 'D'}:
+                        km.keymap_items.remove(kmi)
+
+                # Play 'bike.ride' action
+                bike_ride = bpy.data.actions.get('bike.ride')
+                if bike_ride:
+                    obj.animation_data.action = bike_ride
+
+                # Blend 'bike.turn.l' action when a key is pressed
+                bike_turn_l = bpy.data.actions.get('bike.turn.l')
+                if bike_turn_l and context.window.event.keyname == 'A':
+                    # Create a new NLA track and add the action strip
+                    track = obj.animation_data.nla_tracks.new()
+                    strip = track.strips.new('bike.turn.l', 1, bike_turn_l)
+
+                    # Set blending options
+                    strip.blend_type = 'ADD'
+                    strip.blend_in = 10
+                    strip.blend_out = 10
+
         return {'PASS_THROUGH'}
 
     def execute(self, context):
