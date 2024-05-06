@@ -1,6 +1,28 @@
 import bpy
 import sys
 import os
+# Todo:5/6
+#   -3:33 animation playing going allright but not reacting to keyboard, got to move PlayAndBlendActionsOperator to ModalTimerOperator
+
+class KeybindingUtil:
+    def __init__(self, keybindings):
+        self.keybindings = keybindings
+        self.disabled_keybindings = []
+
+    def disable(self):
+        km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+        for kmi in km.keymap_items:
+            if kmi.idname in [kb[0] for kb in self.keybindings]:
+            # if (kmi.idname, kmi.type, kmi.value) in self.keybindings:
+                km.keymap_items.remove(kmi)
+                self.disabled_keybindings.append((kmi.idname, kmi.type, kmi.value))
+
+    def enable(self):
+        km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+        for keybinding in self.disabled_keybindings:
+            idname, type, value = keybinding
+            km.keymap_items.new(idname, type, 'PRESS')
+        self.disabled_keybindings = []
 
 class PlayAndBlendActionsOperator(bpy.types.Operator):
     bl_idname = "object.play_and_blend_actions"
@@ -14,6 +36,30 @@ class PlayAndBlendActionsOperator(bpy.types.Operator):
         # Initialize loop count and frame number variables
         loop_count = 0
         frame_number = bpy.context.scene.frame_current
+
+        # Switch to modeling workspace
+        bpy.context.window.workspace = bpy.data.workspaces['Modeling']
+
+        # Switch 3D view shading to rendered
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.spaces[0].shading.type = 'RENDERED'
+                # # Focus 3D view
+                # for region in area.regions:
+                #     if region.type == 'WINDOW':
+                #         override = {'window': bpy.context.window, 'screen': bpy.context.screen, 'area': area, 'region': region}
+                #         bpy.ops.view3d.view_all(override)
+
+
+        # Deactivate existing shortcuts for "a" and "d" keys
+        # km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+        # for kmi in km.keymap_items:
+        #     if kmi.type in {'A', 'D'}:
+        #         km.keymap_items.remove(kmi)
+        keybindings_to_disable = [('object.select_all', 'A', 'PRESS'), ('object.select_all', 'D', 'PRESS')]
+        key_binding_util = KeybindingUtil(keybindings_to_disable)
+        key_binding_util.disable()  # This will disable the keybindings
+
         bpy.ops.screen.animation_play()
         return {'FINISHED'}
 
@@ -61,7 +107,8 @@ class ModalTimerOperator(bpy.types.Operator):
     # _timer = None
 
     def modal(self, context, event):
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
+        # if event.type in {'RIGHTMOUSE', 'ESC'}:
+        if event.type == 'ESC':
             self.cancel(context)
             return {'CANCELLED'}
 
@@ -95,14 +142,8 @@ def menu_func(self, context):
     #     ws.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
 
    self.layout.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-   self.scripting.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-   self.animation.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-
-
-def register():
-    bpy.utils.register_class(ModalTimerOperator)
-    bpy.utils.register_class(PlayAndBlendActionsOperator)
-    bpy.types.VIEW3D_MT_view.append(menu_func)
+#    self.scripting.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
+#    self.animation.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
 
 
 # Register and add to the "view" menu (required to also use F3 search "Modal Timer Operator" for quick access).
@@ -110,6 +151,14 @@ def unregister():
     bpy.utils.unregister_class(ModalTimerOperator)
     bpy.utils.unregister_class(PlayAndBlendActionsOperator)
     bpy.types.VIEW3D_MT_view.remove(menu_func)
+
+def register():
+    # unregister()
+    bpy.utils.register_class(ModalTimerOperator)
+    bpy.utils.register_class(PlayAndBlendActionsOperator)
+    bpy.types.VIEW3D_MT_view.append(menu_func)
+
+
 
 # Todo: [debug]
 register()
