@@ -33,34 +33,35 @@ class PlayAndBlendActionsOperator(bpy.types.Operator):
     frame_number = 0
 
     def execute(self, context):
-        # Initialize loop count and frame number variables
-        loop_count = 0
-        frame_number = bpy.context.scene.frame_current
+        # moving to "ModalTimerOperator", eventually dumped
+        # # Initialize loop count and frame number variables
+        # loop_count = 0
+        # frame_number = bpy.context.scene.frame_current
 
-        # Switch to modeling workspace
-        bpy.context.window.workspace = bpy.data.workspaces['Modeling']
+        # # Switch to modeling workspace
+        # bpy.context.window.workspace = bpy.data.workspaces['Modeling']
 
-        # Switch 3D view shading to rendered
-        for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':
-                area.spaces[0].shading.type = 'RENDERED'
-                # # Focus 3D view
-                # for region in area.regions:
-                #     if region.type == 'WINDOW':
-                #         override = {'window': bpy.context.window, 'screen': bpy.context.screen, 'area': area, 'region': region}
-                #         bpy.ops.view3d.view_all(override)
+        # # Switch 3D view shading to rendered
+        # for area in bpy.context.screen.areas:
+        #     if area.type == 'VIEW_3D':
+        #         area.spaces[0].shading.type = 'RENDERED'
+        #         # # Focus 3D view
+        #         # for region in area.regions:
+        #         #     if region.type == 'WINDOW':
+        #         #         override = {'window': bpy.context.window, 'screen': bpy.context.screen, 'area': area, 'region': region}
+        #         #         bpy.ops.view3d.view_all(override)
 
 
-        # Deactivate existing shortcuts for "a" and "d" keys
-        # km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
-        # for kmi in km.keymap_items:
-        #     if kmi.type in {'A', 'D'}:
-        #         km.keymap_items.remove(kmi)
-        keybindings_to_disable = [('object.select_all', 'A', 'PRESS'), ('object.select_all', 'D', 'PRESS')]
-        key_binding_util = KeybindingUtil(keybindings_to_disable)
-        key_binding_util.disable()  # This will disable the keybindings
+        # # Deactivate existing shortcuts for "a" and "d" keys
+        # # km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+        # # for kmi in km.keymap_items:
+        # #     if kmi.type in {'A', 'D'}:
+        # #         km.keymap_items.remove(kmi)
+        # keybindings_to_disable = [('object.select_all', 'A', 'PRESS'), ('object.select_all', 'D', 'PRESS')]
+        # key_binding_util = KeybindingUtil(keybindings_to_disable)
+        # key_binding_util.disable()  # This will disable the keybindings
 
-        bpy.ops.screen.animation_play()
+        # bpy.ops.screen.animation_play()
         return {'FINISHED'}
 
     def modal(self, context, event):
@@ -126,7 +127,39 @@ class ModalTimerOperator(bpy.types.Operator):
         # self._timer = wm.event_timer_add(0.1, window=context.window)
         bpy.app.handlers.frame_change_post.append(self.modal)
         wm.modal_handler_add(self)
-        PlayAndBlendActionsOperator.execute(self, context)
+        # PlayAndBlendActionsOperator.execute(self, context)
+
+        # --------------------------------------------------------
+        # moving from PlayAndBlendActionsOperator.execute
+        # Initialize loop count and frame number variables
+        loop_count = 0
+        frame_number = bpy.context.scene.frame_current
+
+        # Switch to modeling workspace
+        bpy.context.window.workspace = bpy.data.workspaces['Modeling']
+
+        # Switch 3D view shading to rendered
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.spaces[0].shading.type = 'RENDERED'
+                # # Focus 3D view
+                # for region in area.regions:
+                #     if region.type == 'WINDOW':
+                #         override = {'window': bpy.context.window, 'screen': bpy.context.screen, 'area': area, 'region': region}
+                #         bpy.ops.view3d.view_all(override)
+
+
+        # Deactivate existing shortcuts for "a" and "d" keys
+        # km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+        # for kmi in km.keymap_items:
+        #     if kmi.type in {'A', 'D'}:
+        #         km.keymap_items.remove(kmi)
+        keybindings_to_disable = [('object.select_all', 'A', 'PRESS'), ('object.select_all', 'D', 'PRESS')]
+        key_binding_util = KeybindingUtil(keybindings_to_disable)
+        key_binding_util.disable()  # This will disable the keybindings
+
+        bpy.ops.screen.animation_play()
+ 
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
