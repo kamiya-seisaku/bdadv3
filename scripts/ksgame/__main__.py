@@ -1,11 +1,22 @@
+# This code is written for an indie game project "Uncirtain Days"
+# by Kamiya Seisaku.
+# This code is published with the MIT license, as is, no support obligation.
+# Please use this code for whatever you want.
+# It would be nice if you made something cool from here, then I'd love to know, 
+# but you have no obligation to do so.
+# I appreciate the blender team and the community for all they do.
+# Kamiya Kei, 2024
 import bpy
 import sys
 import os
 # Todo:
-# [5/7]
-#   -14:00  
+# [5/7] 
+#   -clean the code
+#     -removed KeybindingUtil for now, its not working. 
+#     -removed nla editing codes its not in use for now.
 # Done:
 # [5/7]
+#   -14:30 Bike shifted realtime with A and D keys! yay. Parented the bike to bike-mover empty and moved bike-mover on event A and D.
 #   -14:00 key assign, w and d fine. ui text updated in realtime. yay. 
 #   -13:00 need key assign.  w first, then d first.  
 #     -manually remove assign.
@@ -14,37 +25,17 @@ import os
 #   -17:00 PlayAndBlendActionsOperator removed entirely and function ok.
 #   -15:33 animation playing going allright but not reacting to keyboard, got to move PlayAndBlendActionsOperator to ModalTimerOperator
 
-class KeybindingUtil:
-    def __init__(self, keybindings):
-        self.keybindings = keybindings
-        self.disabled_keybindings = []
-
-    def disable(self):
-        km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
-        for kmi in km.keymap_items:
-            if kmi.idname in [kb[0] for kb in self.keybindings]:
-            # if (kmi.idname, kmi.type, kmi.value) in self.keybindings:
-                km.keymap_items.remove(kmi)
-                self.disabled_keybindings.append((kmi.idname, kmi.type, kmi.value))
-
-    def enable(self):
-        km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
-        for keybinding in self.disabled_keybindings:
-            idname, type, value = keybinding
-            km.keymap_items.new(idname, type, 'PRESS')
-        self.disabled_keybindings = []
-
 #--------------------------------------------
-# This operator registers itself (via .execute) as a timer event so that 
-# the blender timer runs .modal of this class per frame.
+# This operator registers itself (via .execute method) so that 
+# the blender timer runs .modal method of this class every frame 
+# (with scene animation running).
+# event.type == 'FRAME_CHANGE_POST' becomes true every frame.
+# event.type == 'A' becomes true every time user pressed A key.
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
     bl_label = "Modal Timer Operator"
     
-    # _timer = None
-
     def modal(self, context, event):
-        # if event.type in {'RIGHTMOUSE', 'ESC'}:
         if event.type == 'ESC':
             self.cancel(context)
             return {'CANCELLED'}
@@ -54,62 +45,18 @@ class ModalTimerOperator(bpy.types.Operator):
             text_obj = bpy.data.objects.get('ui.Text.003')
             frame_number = bpy.context.scene.frame_current
             text_obj.data.body = str(f"FN:{frame_number}, {et} pressed")
-            bike = bpy.data.objects.get('bikev16')
+            bike_mover = bpy.data.objects.get('bike-mover')
             if et == 'A':
-                bike.location.x -= 0.5
+                bike_mover.location.x -= 0.5
             if et == 'D':
-                bike.location.x += 0.5
-
-        if event.type == 'FRAME_CHANGE_POST':
-            # change theme color, silly!
-            color = context.preferences.themes[0].view_3d.space.gradients.high_gradient
-            color.s = 1
-            color.h += 0.01
-
-
-            # PlayAndBlendActionsOperator.modal(self, context, event)
-            # ----------------------------------------------------
-            # moved from PlayAndBlendActionsOperator.modal
-            text_obj = bpy.data.objects.get('ui.Text.003')
-            frame_number = bpy.context.scene.frame_current
-            text_obj.data.body = str(f"frame: {frame_number}")
-            
-            bikev16 = bpy.data.objects["bikev16"]
-
-            # Ensure the object is an armature with animation data
-            if bikev16.type == 'ARMATURE' and bikev16.animation_data:
-
-                # Play 'bike.ride' action
-                bike_ride = bpy.data.actions.get('bike.ride')
-                if bike_ride:
-                    bikev16.animation_data.action = bike_ride
-
-                # Blend 'bike.turn.l' action when a key is pressed
-                bike_turn_l = bpy.data.actions.get('bike.turn.l')
-                if bike_turn_l and context.window.event.keyname == 'A':
-                    # Create a new NLA track and add the action strip
-                    track = bikev16.animation_data.nla_tracks.new()
-                    strip = track.strips.new('bike.turn.l', 1, bike_turn_l)
-
-                    # Set blending options
-                    strip.blend_type = 'ADD'
-                    strip.blend_in = 10
-                    strip.blend_out = 10
+                bike_mover.location.x += 0.5
 
         return {'PASS_THROUGH'}
 
     def execute(self, context):
         wm = context.window_manager
-        # self._timer = wm.event_timer_add(0.1, window=context.window)
         bpy.app.handlers.frame_change_post.append(self.modal)
         wm.modal_handler_add(self)
-        # PlayAndBlendActionsOperator.execute(self, context)
-
-        # --------------------------------------------------------
-        # moving from PlayAndBlendActionsOperator.execute
-        # Initialize loop count and frame number variables
-        loop_count = 0
-        frame_number = bpy.context.scene.frame_current
 
         # Switch to modeling workspace
         bpy.context.window.workspace = bpy.data.workspaces['Modeling']
@@ -118,61 +65,32 @@ class ModalTimerOperator(bpy.types.Operator):
         for area in bpy.context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.spaces[0].shading.type = 'RENDERED'
-                # # Focus 3D view
-                # for region in area.regions:
-                #     if region.type == 'WINDOW':
-                #         override = {'window': bpy.context.window, 'screen': bpy.context.screen, 'area': area, 'region': region}
-                #         bpy.ops.view3d.view_all(override)
 
-
-        # Deactivate existing shortcuts for "a" and "d" keys
-        # km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
-        # for kmi in km.keymap_items:
-        #     if kmi.type in {'A', 'D'}:
-        #         km.keymap_items.remove(kmi)
-        keybindings_to_disable = [('object.select_all', 'A', 'PRESS'), ('object.select_all', 'D', 'PRESS')]
-        key_binding_util = KeybindingUtil(keybindings_to_disable)
-        key_binding_util.disable()  # This will disable the keybindings
-
+        # Play active scene animation
         bpy.ops.screen.animation_play()
  
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
         wm = context.window_manager
-        # wm.event_timer_remove(self._timer)
         bpy.app.handlers.frame_change_post.remove(self.modal)
 
 
 #--------------------------------------------
 # Register ModalTimerOperator in layout menu
 def menu_func(self, context):
-    # for ws in {self.layout, self.scripting, self.animation}
-    #     ws.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-
    self.layout.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-#    self.scripting.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
-#    self.animation.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
 
 
 # Register and add to the "view" menu (required to also use F3 search "Modal Timer Operator" for quick access).
 def unregister():
     bpy.utils.unregister_class(ModalTimerOperator)
-    # bpy.utils.unregister_class(PlayAndBlendActionsOperator)
     bpy.types.VIEW3D_MT_view.remove(menu_func)
 
 def register():
     # unregister()
     bpy.utils.register_class(ModalTimerOperator)
-    # bpy.utils.register_class(PlayAndBlendActionsOperator)
     bpy.types.VIEW3D_MT_view.append(menu_func)
-
-    # Disable existing 'A' and 'D' key bindings in 3D View
-    # Todo:Not working.  Manually removed A key keymap for now.
-    km = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
-    for kmi in km.keymap_items:
-        if kmi.type in {'A', 'D'}:
-            km.keymap_items.remove(kmi)
 
 # Todo: [debug]
 register()
