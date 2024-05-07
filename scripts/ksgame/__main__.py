@@ -3,10 +3,13 @@ import sys
 import os
 # Todo:
 # [5/7]
+#   -14:00  
+# Done:
+# [5/7]
+#   -14:00 key assign, w and d fine. ui text updated in realtime. yay. 
 #   -13:00 need key assign.  w first, then d first.  
 #     -manually remove assign.
 #     -assign keymap.
-# Done:
 # [5/6]
 #   -17:00 PlayAndBlendActionsOperator removed entirely and function ok.
 #   -15:33 animation playing going allright but not reacting to keyboard, got to move PlayAndBlendActionsOperator to ModalTimerOperator
@@ -51,10 +54,11 @@ class ModalTimerOperator(bpy.types.Operator):
             text_obj = bpy.data.objects.get('ui.Text.003')
             frame_number = bpy.context.scene.frame_current
             text_obj.data.body = str(f"FN:{frame_number}, {et} pressed")
+            bike = bpy.data.objects.get('bikev16')
             if et == 'A':
-                pass
+                bike.location.x -= 0.5
             if et == 'D':
-                pass
+                bike.location.x += 0.5
 
         if event.type == 'FRAME_CHANGE_POST':
             # change theme color, silly!
