@@ -10,12 +10,13 @@ import bpy
 import sys
 import os
 # Todo:
+#   -15:30 now lets make a ride-path
 # [5/7] 
-#   -clean the code
-#     -removed KeybindingUtil for now, its not working. 
-#     -removed nla editing codes its not in use for now.
 # Done:
 # [5/7]
+#   -15:00 clean the code
+#     -removed KeybindingUtil for now, its not working. 
+#     -removed nla editing codes its not in use for now.
 #   -14:30 Bike shifted realtime with A and D keys! yay. Parented the bike to bike-mover empty and moved bike-mover on event A and D.
 #   -14:00 key assign, w and d fine. ui text updated in realtime. yay. 
 #   -13:00 need key assign.  w first, then d first.  
@@ -31,10 +32,40 @@ import os
 # (with scene animation running).
 # event.type == 'FRAME_CHANGE_POST' becomes true every frame.
 # event.type == 'A' becomes true every time user pressed A key.
+
+class PathUtil:
+    def __init__(self, sequence, rect):
+        self.sequence = sequence
+        self.rect = rect
+        self.rectangles = []
+        self.phase = 0
+
+    def create_rectangles(self):
+        for i, x in enumerate(self.sequence):
+            if i < len(self.rectangles):
+                new_rect = self.rectangles[i]
+            else:
+                new_rect = self.rect.copy()
+                new_rect.data = self.rect.data.copy()
+                new_rect.animation_data_clear()
+                bpy.context.collection.objects.link(new_rect)
+                self.rectangles.append(new_rect)
+            new_rect.location.x = x
+            new_rect.location.y = i + 1
+            new_rect.location.z = 0
+
+    def update_location(self, frame_count):
+        self.phase = frame_count % len(self.sequence)
+        for i, rect in enumerate(self.rectangles):
+            rect.location.x = self.sequence[(i + self.phase) % len(self.sequence)]
+            rect.location.y = i + 1
+
+
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
     bl_label = "Modal Timer Operator"
-    
+    path_util = None
+
     def modal(self, context, event):
         if event.type == 'ESC':
             self.cancel(context)
@@ -47,9 +78,13 @@ class ModalTimerOperator(bpy.types.Operator):
             text_obj.data.body = str(f"FN:{frame_number}, {et} pressed")
             bike_mover = bpy.data.objects.get('bike-mover')
             if et == 'A':
-                bike_mover.location.x -= 0.5
+                if bike_mover.location.x >= 1:
+                    bike_mover.location.x += 0.5
             if et == 'D':
-                bike_mover.location.x += 0.5
+                if bike_mover.location.x <= -1:
+                    bike_mover.location.x -= 0.5
+
+        self.path_util.update_location(bpy.context.scene.frame_current)
 
         return {'PASS_THROUGH'}
 
@@ -57,6 +92,12 @@ class ModalTimerOperator(bpy.types.Operator):
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.append(self.modal)
         wm.modal_handler_add(self)
+
+        # Create riding path.
+        sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
+        rect = bpy.data.objects.get('path_brick')
+        self.path_util = PathUtil(sequence, rect)
+        self.path_util.create_rectangles()
 
         # Switch to modeling workspace
         bpy.context.window.workspace = bpy.data.workspaces['Modeling']
