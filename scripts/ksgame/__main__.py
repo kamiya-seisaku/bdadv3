@@ -10,21 +10,9 @@ import bpy
 import sys
 import os
 # Todo:
-#   -15:30 now lets make a ride-path
-# [5/7] 
-# Done:
-# [5/7]
-#   -15:00 clean the code
-#     -removed KeybindingUtil for now, its not working. 
-#     -removed nla editing codes its not in use for now.
-#   -14:30 Bike shifted realtime with A and D keys! yay. Parented the bike to bike-mover empty and moved bike-mover on event A and D.
-#   -14:00 key assign, w and d fine. ui text updated in realtime. yay. 
-#   -13:00 need key assign.  w first, then d first.  
-#     -manually remove assign.
-#     -assign keymap.
-# [5/6]
-#   -17:00 PlayAndBlendActionsOperator removed entirely and function ok.
-#   -15:33 animation playing going allright but not reacting to keyboard, got to move PlayAndBlendActionsOperator to ModalTimerOperator
+#   -15:30 coding PathUtil to form a path in front of the character to follow
+        # todo: needs to run brick creation as the game starts (which is more of spawn), not when this code initiates
+        # todo: needs to clear brickes when esc otherwise brics object 
 
 #--------------------------------------------
 # This operator registers itself (via .execute method) so that 
@@ -34,31 +22,49 @@ import os
 # event.type == 'A' becomes true every time user pressed A key.
 
 class PathUtil:
-    def __init__(self, sequence, rect):
+    # create an array of brick_obj in front of the character, according to sequence
+    # update the brick_obj array, as the character proceeds
+    def __init__(self, sequence, brick_obj):
         self.sequence = sequence
-        self.rect = rect
+        self.rect = brick_obj
         self.rectangles = []
         self.phase = 0
 
-    def create_rectangles(self):
+    def create_path_bricks(self):
+        # create copies of brick_obj in front of player according to sequence
         for i, x in enumerate(self.sequence):
-            if i < len(self.rectangles):
-                new_rect = self.rectangles[i]
-            else:
-                new_rect = self.rect.copy()
-                new_rect.data = self.rect.data.copy()
-                new_rect.animation_data_clear()
-                bpy.context.collection.objects.link(new_rect)
-                self.rectangles.append(new_rect)
+            # if i < len(self.rectangles):
+            #     new_rect = self.rectangles[i]
+            # else:
+            new_rect = self.rect.copy()
+            new_rect.data = self.rect.data.copy()
+            # new_rect.animation_data_clear()
+            bpy.context.collection.objects.link(new_rect)
+            self.rectangles.append(new_rect)
+            interval = 2.0
+            offset = 2.0
             new_rect.location.x = x
-            new_rect.location.y = i + 1
+            new_rect.location.y = - offset - i * interval
             new_rect.location.z = 0
+            bpy.context.view_layer.update()
 
-    def update_location(self, frame_count):
+    def delete_path_bricks(self):
+        # delete all path bricks created in create_path_bricks method
+        for rect in self.rectangles:
+            # Unlink the rectangle from the scene
+            bpy.context.collection.objects.unlink(rect)
+            # Delete the rectangle object
+            bpy.data.objects.remove(rect)
+        # Clear the rectangles list
+        self.rectangles = []
+
+    # remove the last brick and add one ahead following the sequence
+    def update_path_bricks(self, frame_count):
         self.phase = frame_count % len(self.sequence)
         for i, rect in enumerate(self.rectangles):
             rect.location.x = self.sequence[(i + self.phase) % len(self.sequence)]
             rect.location.y = i + 1
+        self.phase += 1
 
 
 class ModalTimerOperator(bpy.types.Operator):
@@ -77,29 +83,30 @@ class ModalTimerOperator(bpy.types.Operator):
             frame_number = bpy.context.scene.frame_current
             text_obj.data.body = str(f"FN:{frame_number}, {et} pressed")
             bike_mover = bpy.data.objects.get('bike-mover')
-            if et == 'A':
-                if bike_mover.location.x >= 1:
-                    bike_mover.location.x += 0.5
             if et == 'D':
-                if bike_mover.location.x <= -1:
+                if bike_mover.location.x < 1:
+                    bike_mover.location.x += 0.5
+            if et == 'A':
+                if bike_mover.location.x > -1:
                     bike_mover.location.x -= 0.5
 
-        self.path_util.update_location(bpy.context.scene.frame_current)
+        self.path_util.update_path_bricks(bpy.context.scene.frame_current)
 
         return {'PASS_THROUGH'}
 
     def execute(self, context):
+        # This method will be called when the operator "Modal Timer Operator" is called 
+        #   which is when the user selected the menu item
+        #   (not when the class ModalTimerOperator is registered)
+
+        # Register modal method of this class as frame_change_post handler
+        # After this registration, modal method of this class will be called
+        # every frame
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.append(self.modal)
         wm.modal_handler_add(self)
 
-        # Create riding path.
-        sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
-        rect = bpy.data.objects.get('path_brick')
-        self.path_util = PathUtil(sequence, rect)
-        self.path_util.create_rectangles()
-
-        # Switch to modeling workspace
+        # Switch blender UI to modeling workspace
         bpy.context.window.workspace = bpy.data.workspaces['Modeling']
 
         # Switch 3D view shading to rendered
@@ -107,10 +114,19 @@ class ModalTimerOperator(bpy.types.Operator):
             if area.type == 'VIEW_3D':
                 area.spaces[0].shading.type = 'RENDERED'
 
+        # Creates ride path before scene animation plays
+        self.init_path()
         # Play active scene animation
         bpy.ops.screen.animation_play()
  
         return {'RUNNING_MODAL'}
+
+    def init_path(self):
+        # Create riding path.
+        sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
+        path_brick = bpy.data.objects.get('path_brick')
+        self.path_util = PathUtil(sequence, path_brick)
+        self.path_util.create_path_bricks()
 
     def cancel(self, context):
         wm = context.window_manager

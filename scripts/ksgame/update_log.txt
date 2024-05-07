@@ -1,0 +1,14 @@
+# [5/7] 
+# Done:
+# [5/7]
+#   -15:00 clean the code
+#     -removed KeybindingUtil for now, its not working. 
+#     -removed nla editing codes its not in use for now.
+#   -14:30 Bike shifted realtime with A and D keys! yay. Parented the bike to bike-mover empty and moved bike-mover on event A and D.
+#   -14:00 key assign, w and d fine. ui text updated in realtime. yay. 
+#   -13:00 need key assign.  w first, then d first.  
+#     -manually remove assign.
+#     -assign keymap.
+# [5/6]
+#   -17:00 PlayAndBlendActionsOperator removed entirely and function ok.
+#   -15:33 animation playing going allright but not reacting to keyboard, got to move PlayAndBlendActionsOperator to ModalTimerOperator
