@@ -9,6 +9,7 @@
 import bpy
 import sys
 import os
+import init_bricks
 # Todo:
 # [5/8] 15:50 brics wasnt visiby relocated in create_path_bricks, 
 #   needed bpy.context.view_layer.objects.active to make location into blender data object
@@ -24,77 +25,6 @@ import os
 # (with scene animation running).
 # event.type == 'FRAME_CHANGE_POST' becomes true every frame.
 # event.type == 'A' becomes true every time user pressed A key.
-
-class PathUtil:
-    # create an array of brick_obj in front of the character, according to sequence
-    # update the brick_obj array, as the character proceeds
-    def __init__(self, sequence, brick_obj):
-        self.sequence = sequence
-        self.rect = brick_obj
-        self.rectangles = []
-        self.phase = 0
-
-    def create_path_bricks(self):
-        for i in range(1, 30):
-            brick_name = f"path_brick.{i:03d}"
-            brick = bpy.data.objects.get(brick_name)
-            if brick is not None:
-                self.rectangles.append(brick)
-
-        # Position the bricks according to the sequence
-        for i, x in enumerate(self.sequence):
-            if i < len(self.rectangles): #runs only up to rectangles length, even when sequence was longer 
-                new_rect = self.rectangles[i]
-                interval = -2.0
-                offset = -2.0
-                new_rect.location.x = x
-                new_rect.location.y = offset + i * interval
-                new_rect.location.z = 2.84831
-                bpy.context.view_layer.objects.active = new_rect
-                bpy.context.view_layer.update()
-        # # collection = bpy.data.collections.get('buildings') # Get the collection
-        # # layer_collection = bpy.context.view_layer.layer_collection.children[collection.name] # Get the LayerCollection corresponding to the collection
-        # # bpy.context.view_layer.active_layer_collection = layer_collection # Set the active layer collection
-        
-        # # create copies of brick_obj in front of player according to sequence
-        # for i, x in enumerate(self.sequence):
-        #     # if i < len(self.rectangles):
-        #     #     new_rect = self.rectangles[i]
-        #     # else:
-        #     new_rect = self.rect.copy()
-        #     new_rect.data = self.rect.data.copy()
-        #     # new_rect.animation_data_clear()
-        #     bpy.context.collection.objects.link(new_rect)
-        #     self.rectangles.append(new_rect)
-        #     interval = -2.0
-        #     offset = -2.0
-        #     new_rect.location.x = x
-        #     new_rect.location.y = offset + i * interval
-        #     new_rect.location.z = 2.84831
-        #     bpy.context.view_layer.objects.active = new_rect #Need this to make location change into blender data
-        #     bpy.context.view_layer.update()
-        bpy.context.view_layer.update()
-        bpy.ops.wm.save_as_mainfile() #save the changes into .blend file
-
-    # def delete_path_bricks(self):
-    #     # delete all path bricks created in create_path_bricks method
-    #     for rect in self.rectangles:
-    #         # Unlink the rectangle from the scene
-    #         bpy.context.collection.objects.unlink(rect)
-    #         # Delete the rectangle object
-    #         bpy.data.objects.remove(rect)
-    #     # Clear the rectangles list
-    #     self.rectangles = []
-    #     bpy.context.view_layer.update()
-
-    # remove the last brick and add one ahead following the sequence
-    def update_path_bricks(self, frame_count):
-        self.phase = frame_count % len(self.sequence)
-        for i, rect in enumerate(self.rectangles):
-            rect.location.x = self.sequence[(i + self.phase) % len(self.sequence)]
-            rect.location.y = i + 1
-        self.phase += 1
-        bpy.context.view_layer.update()
 
 
 class ModalTimerOperator(bpy.types.Operator):
@@ -119,9 +49,10 @@ class ModalTimerOperator(bpy.types.Operator):
             if et == 'A':
                 if bike_mover.location.x > -1:
                     bike_mover.location.x -= 0.5
+            bpy.context.view_layer.objects.active = bike_mover #Need this to make location changes into blender data
+            bpy.context.view_layer.update() #Need this for the change to be visible in 3D View
 
-        self.path_util.update_path_bricks(bpy.context.scene.frame_current)
-        bpy.context.view_layer.update()
+        # self.path_util.update_path_bricks(bpy.context.scene.frame_current)
 
         return {'PASS_THROUGH'}
 
@@ -146,7 +77,7 @@ class ModalTimerOperator(bpy.types.Operator):
                 area.spaces[0].shading.type = 'RENDERED'
 
         # Creates ride path before scene animation plays
-        self.init_path()
+        # self.init_path()
         # Play active scene animation
         bpy.ops.screen.animation_play()
  
@@ -157,10 +88,10 @@ class ModalTimerOperator(bpy.types.Operator):
         sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
         path_brick = bpy.data.objects.get('path_brick')
         self.path_util = PathUtil(sequence, path_brick)
-        self.path_util.create_path_bricks()
+        # self.path_util.create_path_bricks()
 
     def cancel(self, context):
-        self.delete_path_bricks()
+        # self.delete_path_bricks()
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.remove(self.modal)
 
