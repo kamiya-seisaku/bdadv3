@@ -31,6 +31,10 @@ class PathUtil:
         self.phase = 0
 
     def create_path_bricks(self):
+        # collection = bpy.data.collections.get('buildings') # Get the collection
+        # layer_collection = bpy.context.view_layer.layer_collection.children[collection.name] # Get the LayerCollection corresponding to the collection
+        # bpy.context.view_layer.active_layer_collection = layer_collection # Set the active layer collection
+        
         # create copies of brick_obj in front of player according to sequence
         for i, x in enumerate(self.sequence):
             # if i < len(self.rectangles):
@@ -41,11 +45,12 @@ class PathUtil:
             # new_rect.animation_data_clear()
             bpy.context.collection.objects.link(new_rect)
             self.rectangles.append(new_rect)
-            interval = 2.0
-            offset = 2.0
+            interval = -2.0
+            offset = -2.0
             new_rect.location.x = x
-            new_rect.location.y = - offset - i * interval
-            new_rect.location.z = 0
+            new_rect.location.y = offset + i * interval
+            new_rect.location.z = 2.84831
+            bpy.context.view_layer.objects.active = new_rect #Need this to make location change into blender data
             bpy.context.view_layer.update()
 
     def delete_path_bricks(self):
@@ -69,7 +74,7 @@ class PathUtil:
 
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
-    bl_label = "Modal Timer Operator"
+    bl_label = "ks game"
     path_util = None
 
     def modal(self, context, event):
@@ -129,6 +134,7 @@ class ModalTimerOperator(bpy.types.Operator):
         self.path_util.create_path_bricks()
 
     def cancel(self, context):
+        self.delete_path_bricks()
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.remove(self.modal)
 
