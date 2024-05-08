@@ -10,6 +10,10 @@ import bpy
 import sys
 import os
 # Todo:
+# [5/8] 15:50 brics wasnt visiby relocated in create_path_bricks, 
+#   needed bpy.context.view_layer.objects.active to make location into blender data object
+#   now bricks are in good position except y should be negative
+
 #   -15:30 coding PathUtil to form a path in front of the character to follow
         # todo: needs to run brick creation as the game starts (which is more of spawn), not when this code initiates
         # todo: needs to clear brickes when esc otherwise brics object 
@@ -31,37 +35,57 @@ class PathUtil:
         self.phase = 0
 
     def create_path_bricks(self):
-        # collection = bpy.data.collections.get('buildings') # Get the collection
-        # layer_collection = bpy.context.view_layer.layer_collection.children[collection.name] # Get the LayerCollection corresponding to the collection
-        # bpy.context.view_layer.active_layer_collection = layer_collection # Set the active layer collection
-        
-        # create copies of brick_obj in front of player according to sequence
-        for i, x in enumerate(self.sequence):
-            # if i < len(self.rectangles):
-            #     new_rect = self.rectangles[i]
-            # else:
-            new_rect = self.rect.copy()
-            new_rect.data = self.rect.data.copy()
-            # new_rect.animation_data_clear()
-            bpy.context.collection.objects.link(new_rect)
-            self.rectangles.append(new_rect)
-            interval = -2.0
-            offset = -2.0
-            new_rect.location.x = x
-            new_rect.location.y = offset + i * interval
-            new_rect.location.z = 2.84831
-            bpy.context.view_layer.objects.active = new_rect #Need this to make location change into blender data
-            bpy.context.view_layer.update()
+        for i in range(1, 30):
+            brick_name = f"path_brick.{i:03d}"
+            brick = bpy.data.objects.get(brick_name)
+            if brick is not None:
+                self.rectangles.append(brick)
 
-    def delete_path_bricks(self):
-        # delete all path bricks created in create_path_bricks method
-        for rect in self.rectangles:
-            # Unlink the rectangle from the scene
-            bpy.context.collection.objects.unlink(rect)
-            # Delete the rectangle object
-            bpy.data.objects.remove(rect)
-        # Clear the rectangles list
-        self.rectangles = []
+        # Position the bricks according to the sequence
+        for i, x in enumerate(self.sequence):
+            if i < len(self.rectangles): #runs only up to rectangles length, even when sequence was longer 
+                new_rect = self.rectangles[i]
+                interval = -2.0
+                offset = -2.0
+                new_rect.location.x = x
+                new_rect.location.y = offset + i * interval
+                new_rect.location.z = 2.84831
+                bpy.context.view_layer.objects.active = new_rect
+                bpy.context.view_layer.update()
+        # # collection = bpy.data.collections.get('buildings') # Get the collection
+        # # layer_collection = bpy.context.view_layer.layer_collection.children[collection.name] # Get the LayerCollection corresponding to the collection
+        # # bpy.context.view_layer.active_layer_collection = layer_collection # Set the active layer collection
+        
+        # # create copies of brick_obj in front of player according to sequence
+        # for i, x in enumerate(self.sequence):
+        #     # if i < len(self.rectangles):
+        #     #     new_rect = self.rectangles[i]
+        #     # else:
+        #     new_rect = self.rect.copy()
+        #     new_rect.data = self.rect.data.copy()
+        #     # new_rect.animation_data_clear()
+        #     bpy.context.collection.objects.link(new_rect)
+        #     self.rectangles.append(new_rect)
+        #     interval = -2.0
+        #     offset = -2.0
+        #     new_rect.location.x = x
+        #     new_rect.location.y = offset + i * interval
+        #     new_rect.location.z = 2.84831
+        #     bpy.context.view_layer.objects.active = new_rect #Need this to make location change into blender data
+        #     bpy.context.view_layer.update()
+        bpy.context.view_layer.update()
+        bpy.ops.wm.save_as_mainfile() #save the changes into .blend file
+
+    # def delete_path_bricks(self):
+    #     # delete all path bricks created in create_path_bricks method
+    #     for rect in self.rectangles:
+    #         # Unlink the rectangle from the scene
+    #         bpy.context.collection.objects.unlink(rect)
+    #         # Delete the rectangle object
+    #         bpy.data.objects.remove(rect)
+    #     # Clear the rectangles list
+    #     self.rectangles = []
+    #     bpy.context.view_layer.update()
 
     # remove the last brick and add one ahead following the sequence
     def update_path_bricks(self, frame_count):
@@ -70,6 +94,7 @@ class PathUtil:
             rect.location.x = self.sequence[(i + self.phase) % len(self.sequence)]
             rect.location.y = i + 1
         self.phase += 1
+        bpy.context.view_layer.update()
 
 
 class ModalTimerOperator(bpy.types.Operator):
@@ -96,6 +121,7 @@ class ModalTimerOperator(bpy.types.Operator):
                     bike_mover.location.x -= 0.5
 
         self.path_util.update_path_bricks(bpy.context.scene.frame_current)
+        bpy.context.view_layer.update()
 
         return {'PASS_THROUGH'}
 
