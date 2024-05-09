@@ -1,5 +1,11 @@
-# [5/7] 
 # Done:
+# [5/8] 15:50 brics wasnt visiby relocated in create_path_bricks, 
+#   needed bpy.context.view_layer.objects.active to make location into blender data object
+#   now bricks are in good position except y should be negative
+
+#   -15:30 coding PathUtil to form a path in front of the character to follow
+        # todo: needs to run brick creation as the game starts (which is more of spawn), not when this code initiates
+        # todo: needs to clear brickes when esc otherwise brics object 
 # [5/7]
 #   -15:00 clean the code
 #     -removed KeybindingUtil for now, its not working. 

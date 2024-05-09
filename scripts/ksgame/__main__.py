@@ -10,14 +10,14 @@ import bpy
 import sys
 import os
 # Todo:
-# [5/8] 15:50 brics wasnt visiby relocated in create_path_bricks, 
-#   needed bpy.context.view_layer.objects.active to make location into blender data object
-#   now bricks are in good position except y should be negative
-
-#   -15:30 coding PathUtil to form a path in front of the character to follow
-        # todo: needs to run brick creation as the game starts (which is more of spawn), not when this code initiates
-        # todo: needs to clear brickes when esc otherwise brics object 
-
+# [5/9] 
+# *lets fix score and release as beta
+#   12:00 init_bricks was called statically from blender text editor not from this file.
+#   15:50 scoreing not increasing, test visinity threshold 2 (was.7)
+# -init score
+# -increase score
+# -move passed brick forward
+# -curve path  
 #--------------------------------------------
 # This operator registers itself (via .execute method) so that 
 # the blender timer runs .modal method of this class every frame 
@@ -25,38 +25,36 @@ import os
 # event.type == 'FRAME_CHANGE_POST' becomes true every frame.
 # event.type == 'A' becomes true every time user pressed A key.
 
-def init_bricks():
-    # Instead of using a class and store data in it, 
-    #   (which was a failed attempt, since random and frequent data losses) 
-    #   this function stores data as objects.
-    sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
-    # path_brick = bpy.data.objects.get('path_brick')
-    rectangles = []
-
-    for i in range(1, 30):
-        brick_name = f"path_brick.{i:03d}"
-        brick = bpy.data.objects.get(brick_name)
-        if brick is not None:
-            rectangles.append(brick)
-
-    # Position the bricks according to the sequence
-    for i, x in enumerate(sequence):
-        if i < len(rectangles): #runs only up to rectangles length, even when sequence was longer 
-            new_rect = rectangles[i]
-            interval = -2.0
-            offset = -2.0
-            new_rect.location.x = x
-            new_rect.location.y = offset + i * interval
-            new_rect.location.z = 2.84831
-            bpy.context.view_layer.objects.active = new_rect
-            bpy.context.view_layer.update()
-
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
     bl_label = "ks game"
     path_util = None
 
     def modal(self, context, event):
+        # game score is held in the ui text object, custom property "score"
+        # increase score when the bike hits one of the bricks
+
+        # to show the score in the 3D view, the body of the ui text object
+        # is set according to the same object's custom property "score"
+
+        if bpy.context.scene.frame_current % 60 == 0:
+            score_obj = bpy.data.objects.get('ui.Text.004.score')
+
+            # Check the distance between the bike and each brick
+            bike = bpy.data.objects.get('bikev16') # Get the bike object
+            colision_range = range(1, 10) #originally: range(1, 31)
+            bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range] # Get the brick objects
+            for brick in bricks:
+                distance = (bike.location - brick.location).length
+                if distance < 0.7:  # If the distance is less than 50cm
+                    score_obj["score"] += 1
+                    bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+                    break  # Assuming the score should only be incremented once per frame
+
+            score = score_obj["score"]
+            score_obj.data.body = str(f"Score:{score}")
+            bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+        
         if event.type == 'ESC':
             self.cancel(context)
             return {'CANCELLED'}
@@ -67,10 +65,10 @@ class ModalTimerOperator(bpy.types.Operator):
             frame_number = bpy.context.scene.frame_current
             text_obj.data.body = str(f"FN:{frame_number}, {et} pressed")
             bike_mover = bpy.data.objects.get('bike-mover')
-            if et == 'D':
+            if et == 'A':
                 if bike_mover.location.x < 1:
                     bike_mover.location.x += 0.5
-            if et == 'A':
+            if et == 'D':
                 if bike_mover.location.x > -1:
                     bike_mover.location.x -= 0.5
             bpy.context.view_layer.objects.active = bike_mover #Need this to make location changes into blender data
@@ -101,19 +99,11 @@ class ModalTimerOperator(bpy.types.Operator):
                 area.spaces[0].shading.type = 'RENDERED'
 
         # Creates ride path before scene animation plays
-        bricks.init_bricks()
-        # self.init_path()
+        init_bricks()
         # Play active scene animation
         bpy.ops.screen.animation_play()
  
         return {'RUNNING_MODAL'}
-
-    def init_path(self):
-        # Create riding path.
-        sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
-        path_brick = bpy.data.objects.get('path_brick')
-        self.path_util = PathUtil(sequence, path_brick)
-        # self.path_util.create_path_bricks()
 
     def cancel(self, context):
         # self.delete_path_bricks()
