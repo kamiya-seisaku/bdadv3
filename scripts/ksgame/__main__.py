@@ -9,7 +9,6 @@
 import bpy
 import sys
 import os
-import init_bricks
 # Todo:
 # [5/8] 15:50 brics wasnt visiby relocated in create_path_bricks, 
 #   needed bpy.context.view_layer.objects.active to make location into blender data object
@@ -26,6 +25,31 @@ import init_bricks
 # event.type == 'FRAME_CHANGE_POST' becomes true every frame.
 # event.type == 'A' becomes true every time user pressed A key.
 
+def init_bricks():
+    # Instead of using a class and store data in it, 
+    #   (which was a failed attempt, since random and frequent data losses) 
+    #   this function stores data as objects.
+    sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
+    # path_brick = bpy.data.objects.get('path_brick')
+    rectangles = []
+
+    for i in range(1, 30):
+        brick_name = f"path_brick.{i:03d}"
+        brick = bpy.data.objects.get(brick_name)
+        if brick is not None:
+            rectangles.append(brick)
+
+    # Position the bricks according to the sequence
+    for i, x in enumerate(sequence):
+        if i < len(rectangles): #runs only up to rectangles length, even when sequence was longer 
+            new_rect = rectangles[i]
+            interval = -2.0
+            offset = -2.0
+            new_rect.location.x = x
+            new_rect.location.y = offset + i * interval
+            new_rect.location.z = 2.84831
+            bpy.context.view_layer.objects.active = new_rect
+            bpy.context.view_layer.update()
 
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
@@ -77,6 +101,7 @@ class ModalTimerOperator(bpy.types.Operator):
                 area.spaces[0].shading.type = 'RENDERED'
 
         # Creates ride path before scene animation plays
+        bricks.init_bricks()
         # self.init_path()
         # Play active scene animation
         bpy.ops.screen.animation_play()
