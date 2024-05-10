@@ -1,20 +1,18 @@
-# This code is written for an indie game project "Uncirtain Days"
-# by Kamiya Seisaku.
+# This code is written for a Blender indie game project "Uncirtain Days"
 # This code is published with the MIT license, as is, no support obligation.
-# Please use this code for whatever you want.
-# It would be nice if you made something cool from here, then I'd love to know, 
-# but you have no obligation to do so.
-# I appreciate the blender team and the community for all they do.
-# Kamiya Kei, 2024
+# Please use this code for whatever you want, but at your risk.
+# It would be nice if you made something cool from here, then I'd love to know.
+# I like all kind of games.
+# Kamiya Seisaku, Kamiya Kei, 2024
 import bpy
 import sys
 import os
 # Todo:
-# [5/9] 
-# *lets fix score and release as beta
-#   12:00 init_bricks was called statically from blender text editor not from this file.
-#   15:50 scoreing not increasing, test visinity threshold 2 (was.7)
-# -init score
+# 1 init score
+# 2 Youtube publication prep 
+# 3 bricks actions 
+# [5/10]
+#   04:00 game frame rate reduced to 8 fps (property>Output panel>Scene>Format>Frame Rate, was 24)
 # -increase score
 # -move passed brick forward
 # -curve path  
@@ -46,7 +44,19 @@ class ModalTimerOperator(bpy.types.Operator):
             bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range] # Get the brick objects
             for brick in bricks:
                 distance = (bike.location - brick.location).length
-                if distance < 0.7:  # If the distance is less than 50cm
+                if distance < 3:  # If the distance is less than 50cm
+                    # run hit action
+                    action = bpy.data.actions["brick_hit"]
+                    brick.animation_data_create()
+                    brick.animation_data.action = action
+                    track = brick.animation_data.nla_tracks.new()
+                    strip = track.strips.new("YourAction", bpy.context.scene.frame_current, action)
+
+                    # Shift the action to start at the current frame
+                    strip.frame_start = bpy.context.scene.frame_current
+                    strip.frame_end = strip.frame_start + (action.frame_range[1] - action.frame_range[0])
+                    bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
+
                     score_obj["score"] += 1
                     bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
                     break  # Assuming the score should only be incremented once per frame
@@ -61,9 +71,9 @@ class ModalTimerOperator(bpy.types.Operator):
 
         if event.type in {'A', 'D'}:
             et = event.type
-            text_obj = bpy.data.objects.get('ui.Text.003')
+            dbg_text_obj = bpy.data.objects.get('ui.Text.003')
             frame_number = bpy.context.scene.frame_current
-            text_obj.data.body = str(f"FN:{frame_number}, {et} pressed")
+            dbg_text_obj.data.body = str(f"FN:{frame_number}, {et} pressed")
             bike_mover = bpy.data.objects.get('bike-mover')
             if et == 'A':
                 if bike_mover.location.x < 1:
@@ -79,9 +89,7 @@ class ModalTimerOperator(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        # This method will be called when the operator "Modal Timer Operator" is called 
-        #   which is when the user selected the menu item
-        #   (not when the class ModalTimerOperator is registered)
+        # called when bpy.ops.wm.modal_timer_operator() is called or user selects menu
 
         # Register modal method of this class as frame_change_post handler
         # After this registration, modal method of this class will be called
@@ -90,23 +98,19 @@ class ModalTimerOperator(bpy.types.Operator):
         bpy.app.handlers.frame_change_post.append(self.modal)
         wm.modal_handler_add(self)
 
-        # Switch blender UI to modeling workspace
-        bpy.context.window.workspace = bpy.data.workspaces['Modeling']
+        bpy.context.window.workspace = bpy.data.workspaces['Modeling'] # Switch blender UI to modeling workspace
 
         # Switch 3D view shading to rendered
         for area in bpy.context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.spaces[0].shading.type = 'RENDERED'
 
-        # Creates ride path before scene animation plays
-        init_bricks()
-        # Play active scene animation
-        bpy.ops.screen.animation_play()
+        bpy.data.objects.get('ui.Text.004.score')["score"] = 0 # Reset game score
+        bpy.ops.screen.animation_play() # Play active scene animation
  
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        # self.delete_path_bricks()
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.remove(self.modal)
 

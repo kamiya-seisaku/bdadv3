@@ -1,4 +1,8 @@
 # Done:
+# [5/9] 
+# *lets fix score and release as beta
+#   12:00 init_bricks was called statically from blender text editor not from this file.
+#   15:50 scoreing not increasing, test visinity threshold 2 (was.7)
 # [5/8] 15:50 brics wasnt visiby relocated in create_path_bricks, 
 #   needed bpy.context.view_layer.objects.active to make location into blender data object
 #   now bricks are in good position except y should be negative
