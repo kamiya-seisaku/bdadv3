@@ -9,8 +9,24 @@ def init_bricks():
     rectangles = []
 
     for i in range(1, 30):
+        # delete existing brick copy with index i
         brick_name = f"path_brick.{i:03d}"
+        if brick_name in bpy.data.objects:
+            # Select the object
+            bpy.data.objects[brick_name].select_set(True)
+            
+            # Delete the object
+            bpy.ops.object.delete()
+
+    original_brick = bpy.data.objects.get("path_brick")
+    for i in range(1, len(sequence)):
+        # then (re)create the brick copy
+        brick_name = f"path_brick.{i:03d}"
+        original_brick.select_set(True)
+        bpy.ops.object.duplicate()
+        bpy.ops.object.select_all(action='DESELECT')
         brick = bpy.data.objects.get(brick_name)
+
         if brick is not None:
             rectangles.append(brick)
 
@@ -23,6 +39,7 @@ def init_bricks():
             new_rect.location.x = x
             new_rect.location.y = offset + i * interval
             new_rect.location.z = 2.84831
+            new_rect.parent = original_brick
             bpy.context.view_layer.objects.active = new_rect
             bpy.context.view_layer.update()
 
