@@ -122,7 +122,7 @@ class ModalTimerOperator(bpy.types.Operator):
                     strip.frame_end = strip.frame_start + (action.frame_range[1] - action.frame_range[0])
                     bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
                     # Todo: 5/15 for some reason the brick is not getting deleted
-                    bricks.remove(id=brick_id) #remove the hit brick from the array bricks so it wont get hit again
+                    # 5/15 bricks is recreated every frame from brick objects so removing from bricks list makes no sense:  bricks.remove(id=brick_id) #remove the hit brick from the array bricks so it wont get hit again
                     brick.select_set(True) # Select the object in 3D view
                     bpy.ops.object.delete() # Delete the object from blender data
 
