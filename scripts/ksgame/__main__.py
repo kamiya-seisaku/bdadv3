@@ -50,7 +50,6 @@ class ModalTimerOperator(bpy.types.Operator):
         # increase score when the bike hits one of the bricks
         if bpy.context.scene.frame_current % 60 == 0:
             # brick hit logics (CPU heavy) run only every 60 frames
-            score_obj = bpy.data.objects.get('ui.Text.score')
 
             # Check the distance between the bike and each brick
             bike = bpy.data.objects.get('bikev16') # Get the bike object
@@ -87,18 +86,19 @@ class ModalTimerOperator(bpy.types.Operator):
                     strip.frame_end = strip.frame_start + (action.frame_range[1] - action.frame_range[0])
                     bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
 
+                    score_obj = bpy.data.objects.get('ui.Text.score')
                     score_obj["score"] += 1
                     bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
-                    break  # Assuming the score should only be incremented once per frame
-
-            score = score_obj["score"]
-            score_obj.data.body = str(f"Score:{score}")
-            bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+                    score = score_obj["score"]
+                    score_obj.data.body = str(f"Score:{score}")
+                    bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+                    bricks.remove(brick) #remove the hit brick from the array bricks so it wont get hit again
+                    break  # pass this frame (and not detect key events till next frame)
         
         # key event handling runs every frame for better reactivity
 
         # Avoids "AttributeError: 'Depsgraph' object has no attribute 'type'" when mouse cursor is not in 3D view
-        if isinstance(event, bpy.types.Event) = False:
+        if isinstance(event, bpy.types.Event) == False:
             return {'PASS_THROUGH'}
 
         if event.type == 'ESC':
@@ -157,8 +157,8 @@ class ModalTimerOperator(bpy.types.Operator):
             if area.type == 'VIEW_3D':
                 area.spaces[0].shading.type = 'RENDERED'
 
-        scoreobj = bpy.data.objects.get('ui.Text.004.score')
-        score = scoreobj["score"] # Reset game score
+        score_obj = bpy.data.objects.get('ui.Text.score')
+        score = score_obj["score"] # Reset game score
         score = 0
         bpy.ops.screen.animation_play() # Play active scene animation
  
