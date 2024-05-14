@@ -84,16 +84,16 @@ class ModalTimerOperator(bpy.types.Operator):
             # brick hit logics (CPU heavy) run only every 60 frames
 
             # Check the distance between the bike and each brick
-            bike = bpy.data.objects.get('bikev16') # Get the bike object
 
             # Todo: this is no good, bricks can't be recreated every frame
             # can I delete or move the hit brick instead of just removing from the list? 
             colision_range = range(1, 10) #originally: range(1, 31)
             bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range] # Get the brick objects
             for brick in bricks:
+                bike = bpy.data.objects.get('bikev16') # Get the bike object
+                bike_location = bike.location
                 bpy.context.view_layer.objects.active = brick
-
-                distance = (bike.location - brick.location).length
+                distance = (bike_location - brick.location).length
                 if distance < 3:  # If the distance is less than 3m
                     # Now let the hit brick play "brick_hit" hit action.
                     # This involves 1 create animation data 2 create a nla track, and 3 create a action strip. 
