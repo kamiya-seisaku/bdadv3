@@ -89,7 +89,7 @@ class ModalTimerOperator(bpy.types.Operator):
             # can I delete or move the hit brick instead of just removing from the list? 
             colision_range = range(1, 10) #originally: range(1, 31)
             bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range] # Get the brick objects
-            for brick in bricks:
+            for brick_id, brick in enumerate(bricks):
                 bike = bpy.data.objects.get('bikev16') # Get the bike object
                 bike_location = bike.location
                 bpy.context.view_layer.objects.active = brick
@@ -121,9 +121,10 @@ class ModalTimerOperator(bpy.types.Operator):
                     strip.frame_start = bpy.context.scene.frame_current
                     strip.frame_end = strip.frame_start + (action.frame_range[1] - action.frame_range[0])
                     bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
-                    bricks.remove(brick) #remove the hit brick from the array bricks so it wont get hit again
-                    brick.select_set(True) # Select the object
-                    bpy.ops.object.delete() # Delete the object
+                    # Todo: 5/15 for some reason the brick is not getting deleted
+                    bricks.remove(id=brick_id) #remove the hit brick from the array bricks so it wont get hit again
+                    brick.select_set(True) # Select the object in 3D view
+                    bpy.ops.object.delete() # Delete the object from blender data
 
                     score_obj = bpy.data.objects.get('ui.Text.score')
                     score_obj["score"] += 1
@@ -143,13 +144,13 @@ class ModalTimerOperator(bpy.types.Operator):
                 self.cancel(context)
                 return {'CANCELLED'}
 
-        # Todo: need repeated key event handling: pass event while action "brick_hit" is playing in nla
-        # Todo: want to add and play action "brick_hit" at the scene frame when the bike hits the brick (object distance < 3)
+        # Todo: need repeated key event handling: pass event while action "brick_hit" is playing in nla (getting better but not perfect)
+        # Add and play action "brick_hit" at the scene frame when the bike hits the brick (object distance < threshold)
 
         if event.type in {'A', 'D'}:
-            # TODO' need to check if the bike is already moving
+            # Check if the bike is already moving
             # if moving skip the key event handling
-            # (Not imprementing this would cause double move in the next frame)
+            # (without imprementing this socond side move happens in the next frame)
             bike_mover = bpy.data.objects.get('bike-mover')
             text_obj_key = bpy.data.objects.get('ui.Text.key') # get ui text object for key event capture display
             text_obj_fn = bpy.data.objects.get('ui.Text.FN') # get ui text object for frame number display
@@ -165,6 +166,7 @@ class ModalTimerOperator(bpy.types.Operator):
                 # to show the score in the 3D view, the body of the ui text object
                 # is set according to the same object's custom property "score"
                 text_obj_fn.data.body = str(f"FN:{frame_number}")
+                # key event handling
                 if et == 'A':
                     if bike_mover.location.x < 1:
                         bike_mover.location.x += 0.5
@@ -233,4 +235,4 @@ if __name__ == "__main__":
     register()
 
     # test call
-    bpy.ops.wm.modal_timer_operator()
+    # bpy.ops.wm.modal_timer_operator()
