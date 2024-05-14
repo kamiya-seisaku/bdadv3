@@ -23,22 +23,54 @@ import os
 # event.type == 'FRAME_CHANGE_POST' becomes true every frame.
 # event.type == 'A' becomes true every time user pressed A key.
 
-# def bike_state_machine(is_moving, event):
-#     # returns 
-#     if event == "right_key_hit":
-#         return True
+# Todo: need init_bricks
+def init_bricks():
+    # Instead of using a class and store data in it, 
+    #   (which was a failed attempt, since random and frequent data losses) 
+    #   this function stores data as objects.
+    sequence = [1, 2, 0, 3, 0, 2, 0, 3, 0, 2, 1, 2, 0, 1, 2, 0, 0, 3, 0, 4, 0, 3, 4, 3, 2, 1]
+    # path_brick = bpy.data.objects.get('path_brick')
+    rectangles = []
 
-#     if is_moving:
-#         # bike is already moving
-#         if event in ["right_key_hit", "left_key_hit"] :
-#             return True # bike is still moving
-#     else:
-#         # bike has not been moving
-#         if event in ["right_key_hit", "left_key_hit"] :
-#             return True #bike is now moving
-    
-#     # bike has not been moving and neither right nor left key has been hit
-#     return False
+    for i in range(1, 30):
+        # delete existing brick copy with index i
+        brick_name = f"path_brick.{i:03d}"
+        if brick_name in bpy.data.objects:
+            # Select the object
+            bpy.data.objects[brick_name].select_set(True)
+            
+            # Delete the object
+            bpy.ops.object.delete()
+
+    original_brick = bpy.data.objects.get("path_brick")
+    bpy.context.view_layer.objects.active = original_brick
+    bpy.context.view_layer.update()
+
+    for i in range(1, len(sequence)):
+        # then (re)create the brick copy
+        brick_name = f"path_brick.{i:03d}"
+        original_brick.select_set(True)
+        bpy.ops.object.duplicate()
+        bpy.ops.object.select_all(action='DESELECT')
+        brick = bpy.data.objects.get(brick_name)
+        bpy.context.view_layer.objects.active = brick
+        bpy.context.view_layer.update()
+
+        if brick is not None:
+            rectangles.append(brick)
+
+    # Position the bricks according to the sequence
+    for i, x in enumerate(sequence):
+        if i < len(rectangles): #runs only up to rectangles length, even when sequence was longer 
+            new_rect = rectangles[i]
+            interval = -4.0
+            offset = -2.0
+            new_rect.location.x = x
+            new_rect.location.y = offset + i * interval
+            new_rect.location.z = 2.84831
+            new_rect.parent = original_brick
+            bpy.context.view_layer.objects.active = new_rect
+            bpy.context.view_layer.update()
 
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
@@ -53,6 +85,9 @@ class ModalTimerOperator(bpy.types.Operator):
 
             # Check the distance between the bike and each brick
             bike = bpy.data.objects.get('bikev16') # Get the bike object
+
+            # Todo: this is no good, bricks can't be recreated every frame
+            # can I delete or move the hit brick instead of just removing from the list? 
             colision_range = range(1, 10) #originally: range(1, 31)
             bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range] # Get the brick objects
             for brick in bricks:
@@ -68,16 +103,17 @@ class ModalTimerOperator(bpy.types.Operator):
                     # Get the list of NLA tracks
                     tracks = brick.animation_data.nla_tracks
 
-                    # Check if there are any tracks already
-                    if len(tracks) > 0:
-                        # If there are, insert the new track before the last one
-                        track = tracks.new(prev=tracks[-1])
+                    # Check if there are any tracks already.  If not, create one.
+                    for track in tracks:
+                        if track.name == "brick_hit_track":
+                            break
                     else:
-                        # If there aren't, just append the new track at the end
-                        track = tracks.new()
+                        if len(tracks) > 0:
+                            track = tracks.new(prev=tracks[-1]) # If there are, insert the new track before the last one
+                        else:
+                            track = tracks.new() # If there aren't, just append the new track at the end
 
-                    # Set the name of the track
-                    track.name = "brick_hit_track"
+                        track.name = "brick_hit_track" # Set the name of the track
 
                     # add a strip (plain "brick_hit" action) to the track
                     strip = track.strips.new(name="brick_hit", start=bpy.context.scene.frame_current, action=action)
@@ -85,6 +121,9 @@ class ModalTimerOperator(bpy.types.Operator):
                     strip.frame_start = bpy.context.scene.frame_current
                     strip.frame_end = strip.frame_start + (action.frame_range[1] - action.frame_range[0])
                     bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
+                    bricks.remove(brick) #remove the hit brick from the array bricks so it wont get hit again
+                    brick.select_set(True) # Select the object
+                    bpy.ops.object.delete() # Delete the object
 
                     score_obj = bpy.data.objects.get('ui.Text.score')
                     score_obj["score"] += 1
@@ -92,7 +131,6 @@ class ModalTimerOperator(bpy.types.Operator):
                     score = score_obj["score"]
                     score_obj.data.body = str(f"Score:{score}")
                     bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
-                    bricks.remove(brick) #remove the hit brick from the array bricks so it wont get hit again
                     break  # pass this frame (and not detect key events till next frame)
         
         # key event handling runs every frame for better reactivity
@@ -146,6 +184,8 @@ class ModalTimerOperator(bpy.types.Operator):
         # Register modal method of this class as frame_change_post handler
         # After this registration, modal method of this class will be called
         # every frame
+        init_bricks()
+
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.append(self.modal)
         wm.modal_handler_add(self)
@@ -158,8 +198,9 @@ class ModalTimerOperator(bpy.types.Operator):
                 area.spaces[0].shading.type = 'RENDERED'
 
         score_obj = bpy.data.objects.get('ui.Text.score')
-        score = score_obj["score"] # Reset game score
-        score = 0
+        score_obj["score"] = 0 # Reset game score
+        # score = score_obj["score"] # Reset game score
+        # score = 0
         bpy.ops.screen.animation_play() # Play active scene animation
  
         return {'RUNNING_MODAL'}
