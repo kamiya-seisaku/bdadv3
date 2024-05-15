@@ -32,14 +32,14 @@ def init_bricks():
     # path_brick = bpy.data.objects.get('path_brick')
     rectangles = []
 
-    for i in range(1, 30):
-        # delete existing brick copy with index i
-        brick_name = f"path_brick.{i:03d}"
-        if brick_name in bpy.data.objects:
-            # Select the object
-            bpy.data.objects[brick_name].select_set(True)
-            
-            # Delete the object
+    # Delete existing bricks first, then make copies
+    brick_names = [f"path_brick.{i:03d}" for i in range(1, 30)]
+    brick_names_hit = [name + "_hit" for name in brick_names]
+    all_brick_names = brick_names + brick_names_hit
+    for name in all_brick_names:
+        if name in bpy.data.objects:
+            bpy.ops.object.select_all(action="DESELECT")
+            bpy.data.objects[name].select_set(True)
             bpy.ops.object.delete()
 
     original_brick = bpy.data.objects.get("path_brick")
@@ -49,6 +49,7 @@ def init_bricks():
     for i in range(1, len(sequence)):
         # then (re)create the brick copy
         brick_name = f"path_brick.{i:03d}"
+        bpy.ops.object.select_all(action="DESELECT")
         original_brick.select_set(True)
         bpy.ops.object.duplicate()
         bpy.ops.object.select_all(action='DESELECT')
@@ -82,19 +83,17 @@ class ModalTimerOperator(bpy.types.Operator):
         # increase score when the bike hits one of the bricks
         if bpy.context.scene.frame_current % 60 == 0:
             # brick hit logics (CPU heavy) run only every 60 frames
-
             # Check the distance between the bike and each brick
-
-            # Todo: this is no good, bricks can't be recreated every frame
-            # can I delete or move the hit brick instead of just removing from the list? 
+            # run hit action and then the hit brick is renamed by adding "_hit"
             colision_range = range(1, 10) #originally: range(1, 31)
             bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range] # Get the brick objects
+            bricks = [brick for brick in bricks if brick is not None]
             for brick_id, brick in enumerate(bricks):
-                bike = bpy.data.objects.get('bikev16') # Get the bike object
+                bike = bpy.data.objects.get('hit_guide') # Get the hit_guide for the bike object
                 bike_location = bike.location
                 bpy.context.view_layer.objects.active = brick
                 distance = (bike_location - brick.location).length
-                if distance < 3:  # If the distance is less than 3m
+                if distance < .5:  # If the distance is less than 3m
                     # Now let the hit brick play "brick_hit" hit action.
                     # This involves 1 create animation data 2 create a nla track, and 3 create a action strip. 
                     brick.animation_data_create()
@@ -123,14 +122,21 @@ class ModalTimerOperator(bpy.types.Operator):
                     bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
                     # Todo: 5/15 for some reason the brick is not getting deleted
                     # 5/15 bricks is recreated every frame from brick objects so removing from bricks list makes no sense:  bricks.remove(id=brick_id) #remove the hit brick from the array bricks so it wont get hit again
+                    bpy.ops.object.select_all(action="DESELECT")
                     brick.select_set(True) # Select the object in 3D view
-                    bpy.ops.object.delete() # Delete the object from blender data
+                    # hide the brick in 3D view
+                    brick.name = brick.name + "_hit"
+                    # no I don't delete the object, I want it to play hit animation first.  bpy.ops.object.delete() # Delete the object from blender data
+                    # todo------------------------------------------
 
                     score_obj = bpy.data.objects.get('ui.Text.score')
                     score_obj["score"] += 1
                     bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
                     score = score_obj["score"]
                     score_obj.data.body = str(f"Score:{score}")
+                    bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+                    FN_obj = bpy.data.objects.get('ui.Text.FN')
+                    FN_obj.data.body = str(f"FN:{bpy.context.scene.frame_current}")
                     bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
                     break  # pass this frame (and not detect key events till next frame)
         
