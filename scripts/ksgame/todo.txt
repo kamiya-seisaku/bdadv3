@@ -1,0 +1,24 @@
+-init bike location
+
+brick:
+  bpy.data.objects['path_brick.001']
+
+bricks:
+[bpy.data.objects['path_brick.001'], bpy.data.objects['path_brick.002'], bpy.data.objects['path_brick.003'], bpy.data.objects['path_brick.004'], bpy.data.objects['path_brick.005'], bpy.data.objects['path_brick.006'], bpy.data.objects['path_brick.007'], bpy.data.objects['path_brick.008'], bpy.data.objects['path_brick.009']]
+
+brick:
+bpy.data.objects['path_brick.001']
+
+bpy.context.scene.frame_current:
+  180
+
+## bike must have moved up. Why z = 0???
+bike_location:
+  Vector((0.0, -2.5, 0.0))
+
+##
+brick.location:
+  Vector((1.0, -2.0, 2.8483099937438965))
+
+brick.name:
+  'path_brick.001'

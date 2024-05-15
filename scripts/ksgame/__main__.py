@@ -93,7 +93,7 @@ class ModalTimerOperator(bpy.types.Operator):
                 bike_location = bike.location
                 bpy.context.view_layer.objects.active = brick
                 distance = (bike_location - brick.location).length
-                if distance < .5:  # If the distance is less than 3m
+                if distance < 3:  # If the distance is less than 3m
                     # Now let the hit brick play "brick_hit" hit action.
                     # This involves 1 create animation data 2 create a nla track, and 3 create a action strip. 
                     brick.animation_data_create()
@@ -192,7 +192,10 @@ class ModalTimerOperator(bpy.types.Operator):
         # Register modal method of this class as frame_change_post handler
         # After this registration, modal method of this class will be called
         # every frame
+
         init_bricks()
+        bike_mover = bpy.data.objects['bike-mover']
+        bike_mover.location = [0, 0, 0]
 
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.append(self.modal)
