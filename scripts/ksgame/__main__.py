@@ -7,6 +7,7 @@
 import bpy
 import sys
 import os
+from mathutils import Vector
 # Todo:
 # 1 init score
 # 2 Youtube publication prep 
@@ -23,8 +24,8 @@ import os
 # event.type == 'FRAME_CHANGE_POST' becomes true every frame.
 # event.type == 'A' becomes true every time user pressed A key.
 
-# Todo: need init_bricks
 def init_bricks():
+    
     # Instead of using a class and store data in it, 
     #   (which was a failed attempt, since random and frequent data losses) 
     #   this function stores data as objects.
@@ -43,9 +44,8 @@ def init_bricks():
             bpy.ops.object.delete()
 
     original_brick = bpy.data.objects.get("path_brick")
-    bpy.context.view_layer.objects.active = original_brick
-    bpy.context.view_layer.update()
-
+    bpy.context.view_layer.objects.active = original_brick # Explicitly set the active object
+    bpy.context.view_layer.update() #Force refrect data changes to view
     for i in range(1, len(sequence)):
         # then (re)create the brick copy
         brick_name = f"path_brick.{i:03d}"
@@ -68,8 +68,8 @@ def init_bricks():
             offset = -2.0
             new_rect.location.x = x
             new_rect.location.y = offset + i * interval
-            new_rect.location.z = 2.84831
-            new_rect.parent = original_brick
+            new_rect.location.z = 4
+            # new_rect.parent = original_brick
             bpy.context.view_layer.objects.active = new_rect
             bpy.context.view_layer.update()
 
@@ -86,14 +86,16 @@ class ModalTimerOperator(bpy.types.Operator):
             # Check the distance between the bike and each brick
             # run hit action and then the hit brick is renamed by adding "_hit"
             colision_range = range(1, 10) #originally: range(1, 31)
-            bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range] # Get the brick objects
-            bricks = [brick for brick in bricks if brick is not None]
+            bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range]
+            bricks = [brick for brick in bricks if brick is not None] # remove None objects. hit bricks become None.
             for brick_id, brick in enumerate(bricks):
-                bike = bpy.data.objects.get('hit_guide') # Get the hit_guide for the bike object
+                bike = bpy.data.objects.get('bikev16')
                 bike_location = bike.location
+                # set hit point of the bike in front of bike, negative in y direction
+                hit_point = bike_location + Vector((0, -2, 0))
                 bpy.context.view_layer.objects.active = brick
-                distance = (bike_location - brick.location).length
-                if distance < 3:  # If the distance is less than 3m
+                distance = (hit_point - brick.location).length
+                if distance < .5:  # If the distance is less than 3m
                     # Now let the hit brick play "brick_hit" hit action.
                     # This involves 1 create animation data 2 create a nla track, and 3 create a action strip. 
                     brick.animation_data_create()
@@ -193,9 +195,11 @@ class ModalTimerOperator(bpy.types.Operator):
         # After this registration, modal method of this class will be called
         # every frame
 
-        init_bricks()
+        # running init_bricks() from operator/__main__ are'nt working.  run it from blender text editor.:       init_bricks()
         bike_mover = bpy.data.objects['bike-mover']
         bike_mover.location = [0, 0, 0]
+        bpy.context.view_layer.objects.active = bike_mover #Need this to make location changes into blender data
+        bpy.context.view_layer.update() #Need this for the change to be visible in 3D View
 
         wm = context.window_manager
         bpy.app.handlers.frame_change_post.append(self.modal)
@@ -226,22 +230,20 @@ class ModalTimerOperator(bpy.types.Operator):
 def menu_func(self, context):
    self.layout.operator(ModalTimerOperator.bl_idname, text=ModalTimerOperator.bl_label)
 
-
 # Register and add to the "view" menu (required to also use F3 search "Modal Timer Operator" for quick access).
 def unregister():
     bpy.utils.unregister_class(ModalTimerOperator)
     bpy.types.VIEW3D_MT_view.remove(menu_func)
 
 def register():
-    # unregister()
     bpy.utils.register_class(ModalTimerOperator)
     bpy.types.VIEW3D_MT_view.append(menu_func)
 
-# Todo: [debug]
-register()
+# Todo: comment out [debug codes]
+#register()
+#init_bricks()
+#unregister()
 
 if __name__ == "__main__":
     register()
-
-    # test call
-    # bpy.ops.wm.modal_timer_operator()
+#    bpy.ops.wm.modal_timer_operator()

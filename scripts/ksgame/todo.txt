@@ -1,8 +1,15 @@
--init bike location
+[] bricks coord off the actual positions.  The origin (of the copy original) should be the first brick position?
+[] test-init bike location
+[] BIKE/BRICK z position strange-due to child of.  only parent actually moves.  to_world matrix did not work.  probably this is not being updated per frame. bike16.location + (0, -1 * y_offset, 0) should be used to calculate distance.  
+ FR: 180
+ bike z:  0
+ brick z: 2.84
 
-brick:
-  bpy.data.objects['path_brick.001']
+[game.blend static data @Frame 180]
+ (bikev16)  z: 4.008
+ (hit_guide) z: 0 
 
+[Debug console log]
 bricks:
 [bpy.data.objects['path_brick.001'], bpy.data.objects['path_brick.002'], bpy.data.objects['path_brick.003'], bpy.data.objects['path_brick.004'], bpy.data.objects['path_brick.005'], bpy.data.objects['path_brick.006'], bpy.data.objects['path_brick.007'], bpy.data.objects['path_brick.008'], bpy.data.objects['path_brick.009']]
 
@@ -19,6 +26,3 @@ bike_location:
 ##
 brick.location:
   Vector((1.0, -2.0, 2.8483099937438965))
-
-brick.name:
-  'path_brick.001'
