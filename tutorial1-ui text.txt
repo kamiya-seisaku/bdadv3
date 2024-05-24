@@ -1,0 +1,48 @@
+Hi.
+Today I want to a show demo 
+and show you how you can make a 
+HUD-like user interface using blender + python.
+
+First we want some model.  Here I am importing my bicycle model, 
+that bike has a rider girl and 
+some animations already assigned.
+
+If you look at the NLA editor, the bike has some actions going on.
+The girl rig also has some actions running in this scene.
+
+In the 3D view, the bike goes up and goes out of sight.
+
+Lets first attach the camera to the bike so it stays focused on the bike.
+
+The simplest way to do this is to parent the camera to the bike.
+
+Parenting it to the bike, now camera keeps looking at the bike.
+
+Now camera is looking light into the bike.
+
+Lets add some background objects so we can see how the bike is moving.
+
+Now we can see the bike is flying above the cubes.  Yeah this bike flies.
+
+Lets moving the camera, so we see the path better.
+
+Now we are set.  We want to have a text object and show some info there.
+
+Select the camera and add a text object.  Change the name of the text object to ui.
+
+Move it to where you want in the sight.
+
+Parent it to the camera.  Lets play the animation.
+
+The text comes perfectly with the camera, so it looks like a head up display for the player.
+
+You can change the text however you like.  But we want it change.
+
+Now the python part.
+
+
+
+
+
+
+

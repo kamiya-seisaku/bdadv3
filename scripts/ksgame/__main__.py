@@ -7,16 +7,11 @@
 import bpy
 import sys
 import os
+import glob
 from mathutils import Vector
 # Todo:
-# 1 init score
-# 2 Youtube publication prep 
-# 3 bricks actions 
-# [5/10]
-#   04:00 game frame rate reduced to 8 fps (property>Output panel>Scene>Format>Frame Rate, was 24)
-# -increase score
-# -move passed brick forward
-# -curve path  
+# 1 web casting
+# 1 implement per frame rendering, where each frame is rendered to a separate image file on the fly.
 #--------------------------------------------
 # This operator registers itself (via .execute method) so that 
 # the blender timer runs .modal method of this class every frame 
@@ -79,9 +74,26 @@ class ModalTimerOperator(bpy.types.Operator):
     path_util = None
 
     def modal(self, context, event):
+        current_frame = bpy.context.scene.frame_current
+        # render the frame to an image
+        print("111")
+        # Define the output path
+        output_path = f"C:\\tmp\\ucd{current_frame}.png"
+        
+        # Set the output format to PNG
+        bpy.context.scene.render.image_settings.file_format = 'PNG'
+        
+        # Set the output path
+        bpy.context.scene.render.filepath = output_path
+        
+        # Render the current 3D view
+        bpy.ops.render.opengl(write_still=True) #use eevee
+        #bpy.ops.render.render(write_still=True) #use raytracing
+        print("222")
+
         # game score is held in the ui text object, custom property "score"
         # increase score when the bike hits one of the bricks
-        if bpy.context.scene.frame_current % 60 == 0:
+        if current_frame % 60 == 0:
             # brick hit logics (CPU heavy) run only every 60 frames
             # Check the distance between the bike and each brick
             # run hit action and then the hit brick is renamed by adding "_hit"
@@ -195,6 +207,11 @@ class ModalTimerOperator(bpy.types.Operator):
         # After this registration, modal method of this class will be called
         # every frame
 
+        # clear image folder
+        files = glob.glob('C:\\tmp\\*')
+        for f in files:
+            os.remove(f)
+
         # running init_bricks() from operator/__main__ are'nt working.  run it from blender text editor.:       init_bricks()
         bike_mover = bpy.data.objects['bike-mover']
         bike_mover.location = [0, 0, 0]
@@ -241,9 +258,10 @@ def register():
 
 # Todo: comment out [debug codes]
 #register()
+# bpy.ops.wm.modal_timer_operator()
 #init_bricks()
 #unregister()
 
 if __name__ == "__main__":
     register()
-#    bpy.ops.wm.modal_timer_operator()
+    bpy.ops.wm.modal_timer_operator()
