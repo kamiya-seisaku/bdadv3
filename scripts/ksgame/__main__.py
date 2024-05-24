@@ -78,7 +78,8 @@ class ModalTimerOperator(bpy.types.Operator):
         # render the frame to an image
         print("111")
         # Define the output path
-        output_path = f"C:\\tmp\\ucd{current_frame}.png"
+#        output_path = f"C:\\tmp\\ucd{current_frame}.png"
+        output_path = f".\\flaskserver\\img\\ucd{current_frame}.png"
         
         # Set the output format to PNG
         bpy.context.scene.render.image_settings.file_format = 'PNG'
