@@ -1,0 +1,16 @@
+{
+    "name": "uncirtain-days",
+    "version": "0.0.1",
+    "description": "uncirtain days",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+      "express": "^4.17.1"
+    }
+  }
+  

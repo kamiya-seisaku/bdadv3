@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Display</title>
+    <script type="text/javascript">
+        function refreshImage() {
+            const imgElement = document.getElementById('dynamic-image');
+            const timestamp = new Date().getTime();
+            imgElement.src = '/latest-image?' + timestamp;
+        }
+        setInterval(refreshImage, 500); // Refresh every 500ms (twice per second)
+    </script>
+</head>
+<body>
+    <img id="dynamic-image" src="/latest-image" alt="Dynamic Image">
+</body>
+</html>
