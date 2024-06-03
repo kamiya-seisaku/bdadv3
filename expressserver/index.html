@@ -1,14 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Display</title>
+    <title>Uncirtain Days</title>
     <script type="text/javascript">
+        // WebSocket connection
+        const webSocket = new WebSocket('ws://localhost:8080');
+
+        webSocket.onopen = function(event) {
+            console.log("WebSocket connection opened");
+        };
+
+        webSocket.onclose = function(event) {
+            console.log("WebSocket connection closed");
+        };
+
+        webSocket.onerror = function(event) {
+            console.error("WebSocket error:", event);
+        };
+
+        // Function to refresh the image 
         function refreshImage() {
             const imgElement = document.getElementById('dynamic-image');
             const timestamp = new Date().getTime();
             imgElement.src = '/latest-image?' + timestamp;
         }
         setInterval(refreshImage, 500); // Refresh every 500ms (twice per second)
+
+        // Key event listener
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'a' || event.key === 'd') {
+                webSocket.send('key:' + event.key); 
+            }
+        });
     </script>
 </head>
 <body>
