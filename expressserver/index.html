@@ -4,6 +4,18 @@
     <title>Uncirtain Days</title>
     <script type="text/javascript">
         // WebSocket connection
+        let socketConnected = false;
+        if socketConnected = false {
+            const webSocket = new WebSocket('ws://localhost:8080');
+            socketConnected = true;
+
+            // Key event listener
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'a' || event.key === 'd') {
+                    webSocket.send('key:' + event.key); 
+                }
+            });
+        }
         const webSocket = new WebSocket('ws://localhost:8080');
 
         webSocket.onopen = function(event) {
@@ -18,20 +30,13 @@
             console.error("WebSocket error:", event);
         };
 
-        // Function to refresh the image 
+        // Function to update the image source (not reload the page)
         function refreshImage() {
             const imgElement = document.getElementById('dynamic-image');
             const timestamp = new Date().getTime();
             imgElement.src = '/latest-image?' + timestamp;
         }
-        setInterval(refreshImage, 500); // Refresh every 500ms (twice per second)
-
-        // Key event listener
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'a' || event.key === 'd') {
-                webSocket.send('key:' + event.key); 
-            }
-        });
+        setInterval(refreshImage, 500); 
     </script>
 </head>
 <body>

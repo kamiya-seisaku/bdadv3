@@ -8,6 +8,9 @@ import bpy
 import sys
 import os
 import glob
+import asyncio
+import websockets
+import json
 from mathutils import Vector
 # Todo:
 # 1 web casting
@@ -20,7 +23,6 @@ from mathutils import Vector
 # event.type == 'A' becomes true every time user pressed A key.
 
 def init_bricks():
-    
     # Instead of using a class and store data in it, 
     #   (which was a failed attempt, since random and frequent data losses) 
     #   this function stores data as objects.
@@ -68,6 +70,23 @@ def init_bricks():
             bpy.context.view_layer.objects.active = new_rect
             bpy.context.view_layer.update()
 
+async def connect_websocket(operator_instance):
+    uri = "ws://127.0.0.1:8080"  
+    messages = []
+    try:
+        async with websockets.connect(uri) as websocket:
+            while not operator_instance.cancel_requested:
+                try:
+                    message = await websocket.recv()
+                    messages.append(message)  # Store received messages
+                except websockets.ConnectionClosed:
+                    print("WebSocket connection closed.")
+                    break  # Exit the loop on connection closure
+    except (OSError, websockets.exceptions.WebSocketException) as e:
+        print(f"WebSocket connection error: {e}")
+    return messages  # Return all received messages
+
+
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
     bl_label = "ks game"
@@ -75,22 +94,15 @@ class ModalTimerOperator(bpy.types.Operator):
 
     def modal(self, context, event):
         current_frame = bpy.context.scene.frame_current
-        # render the frame to an image
-        print("111")
-        # Define the output path
-#        output_path = f"C:\\tmp\\ucd{current_frame}.png"
-        output_path = f".\\flaskserver\\img\\ucd{current_frame}.png"
-        
-        # Set the output format to PNG
-        bpy.context.scene.render.image_settings.file_format = 'PNG'
-        
-        # Set the output path
-        bpy.context.scene.render.filepath = output_path
-        
-        # Render the current 3D view
-        bpy.ops.render.opengl(write_still=True) #use eevee
-        #bpy.ops.render.render(write_still=True) #use raytracing
-        print("222")
+
+        # openGL render frame)
+        # output_path = f".\\flaskserver\\img\\ucd{current_frame}.png"
+        # # Set the output format to PNG
+        # bpy.context.scene.render.image_settings.file_format = 'PNG'
+        # # Set the output path
+        # bpy.context.scene.render.filepath = output_path
+        # # Render the current 3D view
+        # bpy.ops.render.opengl(write_still=True) #use eevee(opengl)
 
         # game score is held in the ui text object, custom property "score"
         # increase score when the bike hits one of the bricks
@@ -155,8 +167,6 @@ class ModalTimerOperator(bpy.types.Operator):
                     bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
                     break  # pass this frame (and not detect key events till next frame)
         
-        # key event handling runs every frame for better reactivity
-
         # Avoids "AttributeError: 'Depsgraph' object has no attribute 'type'" when mouse cursor is not in 3D view
         if isinstance(event, bpy.types.Event) == False:
             return {'PASS_THROUGH'}
@@ -165,41 +175,51 @@ class ModalTimerOperator(bpy.types.Operator):
                 self.cancel(context)
                 return {'CANCELLED'}
 
-        # Todo: need repeated key event handling: pass event while action "brick_hit" is playing in nla (getting better but not perfect)
-        # Add and play action "brick_hit" at the scene frame when the bike hits the brick (object distance < threshold)
-
-        if event.type in {'A', 'D'}:
-            # Check if the bike is already moving
-            # if moving skip the key event handling
-            # (without imprementing this socond side move happens in the next frame)
-            bike_mover = bpy.data.objects.get('bike-mover')
-            text_obj_key = bpy.data.objects.get('ui.Text.key') # get ui text object for key event capture display
-            text_obj_fn = bpy.data.objects.get('ui.Text.FN') # get ui text object for frame number display
-            # if bike_mover["is_moving"]: # not clear how bike mover custom properties are changing, lets instead use ui_text
-            if text_obj_key.data.body == str(f"bike_mover is moving"):
-                # bike_mover["is_moving"] = False
-                text_obj_key.data.body = str(f"bike_mover is not moving")
-            else:
-                # bike_mover["is_moving"] = True
-                text_obj_key.data.body = str(f"bike_mover is moving")
-                et = event.type
-                frame_number = bpy.context.scene.frame_current
-                # to show the score in the 3D view, the body of the ui text object
-                # is set according to the same object's custom property "score"
-                text_obj_fn.data.body = str(f"FN:{frame_number}")
-                # key event handling
-                if et == 'A':
-                    if bike_mover.location.x < 1:
-                        bike_mover.location.x += 0.5
-                if et == 'D':
-                    if bike_mover.location.x > -1:
-                        bike_mover.location.x -= 0.5
-                bpy.context.view_layer.objects.active = bike_mover #Need this to make location changes into blender data
-                bpy.context.view_layer.update() #Need this for the change to be visible in 3D View
+        # Handle key events from both WebSocket and keyboard
+        if event.type == 'TIMER':
+            messages = asyncio.run(connect_websocket(self))  # Get WebSocket messages
+            for message in messages:
+                data = json.loads(message)
+                if data.get("key") in ['a', 'd']:
+                    self.handle_key_input(context, data["key"])
+        elif event.type in {'A', 'D'}:  # Handle regular keyboard events
+            self.handle_key_input(context, event.type)
 
         # self.path_util.update_path_bricks(bpy.context.scene.frame_current)
 
         return {'PASS_THROUGH'}
+
+    def handle_key_input(self, context, key):
+        # Todo: Add and play action "brick_hit" at the scene frame when the bike hits the brick (object distance < threshold)
+        # Check if the bike is already moving
+        # if moving skip the key event handling
+        # (without imprementing this socond side move happens in the next frame)
+        bike_mover = bpy.data.objects.get('bike-mover')
+        text_obj_key = bpy.data.objects.get('ui.Text.key') # get ui text object for key event capture display
+        text_obj_fn = bpy.data.objects.get('ui.Text.FN') # get ui text object for frame number display
+        # if bike_mover["is_moving"]: # not clear how bike mover custom properties are changing, lets instead use ui_text
+        if text_obj_key.data.body == str(f"bike_mover is moving"):
+            # bike_mover["is_moving"] = False
+            text_obj_key.data.body = str(f"bike_mover is not moving")
+        else:
+            # bike_mover["is_moving"] = True
+            text_obj_key.data.body = str(f"bike_mover is moving")
+            frame_number = bpy.context.scene.frame_current
+            # to show the score in the 3D view, the body of the ui text object
+            # is set according to the same object's custom property "score"
+            text_obj_fn.data.body = str(f"FN:{frame_number}")
+            # key event handling
+            if key_input == 'A':
+                if bike_mover.location.x < 1:
+                    bike_mover.location.x += 0.5
+            if key_input == 'D':
+                if bike_mover.location.x > -1:
+                    bike_mover.location.x -= 0.5
+            bpy.context.view_layer.objects.active = bike_mover #Need this to make location changes into blender data
+            bpy.context.view_layer.update() #Need this for the change to be visible in 3D View
+
+
+
 
     def execute(self, context):
         # called when bpy.ops.wm.modal_timer_operator() is called or user selects menu
@@ -208,12 +228,22 @@ class ModalTimerOperator(bpy.types.Operator):
         # After this registration, modal method of this class will be called
         # every frame
 
+        # suppress logging
+        with open('/dev/null', 'w') as outfile:
+          # Capture original standard output
+          stdout = sys.stdout
+          # Replace standard output with null
+          sys.stdout = outfile
+          # Execute render operation with suppressed console log
+          bpy.ops.render.opengl(write_still=True)
+          # Restore original standard output
+          sys.stdout = stdout
+
         # clear image folder
         files = glob.glob('C:\\tmp\\*')
         for f in files:
             os.remove(f)
 
-        # running init_bricks() from operator/__main__ are'nt working.  run it from blender text editor.:       init_bricks()
         bike_mover = bpy.data.objects['bike-mover']
         bike_mover.location = [0, 0, 0]
         bpy.context.view_layer.objects.active = bike_mover #Need this to make location changes into blender data
@@ -257,6 +287,7 @@ def register():
     bpy.utils.register_class(ModalTimerOperator)
     bpy.types.VIEW3D_MT_view.append(menu_func)
 
+# running init_bricks() from operator/__main__ isn't working.  run it from blender text editor.:       init_bricks()
 # Todo: comment out [debug codes]
 #register()
 # bpy.ops.wm.modal_timer_operator()
