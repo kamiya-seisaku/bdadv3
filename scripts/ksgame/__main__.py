@@ -232,16 +232,16 @@ class ModalTimerOperator(bpy.types.Operator):
         # After this registration, modal method of this class will be called
         # every frame
 
-        # suppress logging
-        with open('/dev/null', 'w') as outfile:
-          # Capture original standard output
-          stdout = sys.stdout
-          # Replace standard output with null
-          sys.stdout = outfile
-          # Execute render operation with suppressed console log
-          bpy.ops.render.opengl(write_still=True)
-          # Restore original standard output
-          sys.stdout = stdout
+        # # suppress logging
+        # with open('NUL', 'w') as outfile:
+        #   # Capture original standard output
+        #   stdout = sys.stdout
+        #   # Replace standard output with null
+        #   sys.stdout = outfile
+        #   # Execute render operation with suppressed console log
+        #   bpy.ops.render.opengl(write_still=True)
+        #   # Restore original standard output
+        #   sys.stdout = stdout
 
         # clear image folder
         files = glob.glob('C:\\tmp\\*')
@@ -271,6 +271,7 @@ class ModalTimerOperator(bpy.types.Operator):
         bpy.ops.screen.animation_play() # Play active scene animation
  
         return {'RUNNING_MODAL'}
+        pass
 
     def cancel(self, context):
         wm = context.window_manager
@@ -285,11 +286,11 @@ def menu_func(self, context):
 # Register and add to the "view" menu (required to also use F3 search "Modal Timer Operator" for quick access).
 def unregister():
     bpy.utils.unregister_class(ModalTimerOperator)
-    bpy.types.VIEW3D_MT_view.remove(menu_func)
+    # bpy.types.VIEW3D_MT_view.remove(menu_func)
 
 def register():
     bpy.utils.register_class(ModalTimerOperator)
-    bpy.types.VIEW3D_MT_view.append(menu_func)
+    # bpy.types.VIEW3D_MT_view.append(menu_func)
 
 # running init_bricks() from operator/__main__ isn't working.  run it from blender text editor.:       init_bricks()
 # Todo: comment out [debug codes]
@@ -300,4 +301,4 @@ def register():
 
 if __name__ == "__main__":
     register()
-    bpy.ops.wm.modal_timer_operator()
+    # bpy.ops.wm.modal_timer_operator()
