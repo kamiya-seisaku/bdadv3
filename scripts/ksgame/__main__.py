@@ -106,90 +106,94 @@ class ModalTimerOperator(bpy.types.Operator):
 
         # game score is held in the ui text object, custom property "score"
         # increase score when the bike hits one of the bricks
-        if current_frame % 60 == 0:
-            # brick hit logics (CPU heavy) run only every 60 frames
-            # Check the distance between the bike and each brick
-            # run hit action and then the hit brick is renamed by adding "_hit"
-            colision_range = range(1, 10) #originally: range(1, 31)
-            bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range]
-            bricks = [brick for brick in bricks if brick is not None] # remove None objects. hit bricks become None.
-            for brick_id, brick in enumerate(bricks):
-                bike = bpy.data.objects.get('bikev16')
-                bike_location = bike.location
-                # set hit point of the bike in front of bike, negative in y direction
-                hit_point = bike_location + Vector((0, -2, 0))
-                bpy.context.view_layer.objects.active = brick
-                distance = (hit_point - brick.location).length
-                if distance < .5:  # If the distance is less than 3m
-                    # Now let the hit brick play "brick_hit" hit action.
-                    # This involves 1 create animation data 2 create a nla track, and 3 create a action strip. 
-                    brick.animation_data_create()
-                    action = bpy.data.actions["brick_hit"]
 
-                    # Get the list of NLA tracks
-                    tracks = brick.animation_data.nla_tracks
+        # old keytype handling
+        # if current_frame % 60 == 0:
+        #     # brick hit logics (CPU heavy) run only every 60 frames
+        #     # Check the distance between the bike and each brick
+        #     # run hit action and then the hit brick is renamed by adding "_hit"
+        #     colision_range = range(1, 10) #originally: range(1, 31)
+        #     bricks = [bpy.data.objects.get(f'path_brick.{i:03d}') for i in colision_range]
+        #     bricks = [brick for brick in bricks if brick is not None] # remove None objects. hit bricks become None.
+        #     for brick_id, brick in enumerate(bricks):
+        #         bike = bpy.data.objects.get('bikev16')
+        #         bike_location = bike.location
+        #         # set hit point of the bike in front of bike, negative in y direction
+        #         hit_point = bike_location + Vector((0, -2, 0))
+        #         bpy.context.view_layer.objects.active = brick
+        #         distance = (hit_point - brick.location).length
+        #         if distance < .5:  # If the distance is less than 3m
+        #             # Now let the hit brick play "brick_hit" hit action.
+        #             # This involves 1 create animation data 2 create a nla track, and 3 create a action strip. 
+        #             brick.animation_data_create()
+        #             action = bpy.data.actions["brick_hit"]
 
-                    # Check if there are any tracks already.  If not, create one.
-                    for track in tracks:
-                        if track.name == "brick_hit_track":
-                            break
-                    else:
-                        if len(tracks) > 0:
-                            track = tracks.new(prev=tracks[-1]) # If there are, insert the new track before the last one
-                        else:
-                            track = tracks.new() # If there aren't, just append the new track at the end
+        #             # Get the list of NLA tracks
+        #             tracks = brick.animation_data.nla_tracks
 
-                        track.name = "brick_hit_track" # Set the name of the track
+        #             # Check if there are any tracks already.  If not, create one.
+        #             for track in tracks:
+        #                 if track.name == "brick_hit_track":
+        #                     break
+        #             else:
+        #                 if len(tracks) > 0:
+        #                     track = tracks.new(prev=tracks[-1]) # If there are, insert the new track before the last one
+        #                 else:
+        #                     track = tracks.new() # If there aren't, just append the new track at the end
 
-                    # add a strip (plain "brick_hit" action) to the track
-                    strip = track.strips.new(name="brick_hit", start=bpy.context.scene.frame_current, action=action)
-                    # # Shift the action to start at the current frame
-                    strip.frame_start = bpy.context.scene.frame_current
-                    strip.frame_end = strip.frame_start + (action.frame_range[1] - action.frame_range[0])
-                    bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
-                    # Todo: 5/15 for some reason the brick is not getting deleted
-                    # 5/15 bricks is recreated every frame from brick objects so removing from bricks list makes no sense:  bricks.remove(id=brick_id) #remove the hit brick from the array bricks so it wont get hit again
-                    bpy.ops.object.select_all(action="DESELECT")
-                    brick.select_set(True) # Select the object in 3D view
-                    # hide the brick in 3D view
-                    brick.name = brick.name + "_hit"
-                    # no I don't delete the object, I want it to play hit animation first.  bpy.ops.object.delete() # Delete the object from blender data
-                    # todo------------------------------------------
+        #                 track.name = "brick_hit_track" # Set the name of the track
 
-                    score_obj = bpy.data.objects.get('ui.Text.score')
-                    score_obj["score"] += 1
-                    bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
-                    score = score_obj["score"]
-                    score_obj.data.body = str(f"Score:{score}")
-                    bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
-                    FN_obj = bpy.data.objects.get('ui.Text.FN')
-                    FN_obj.data.body = str(f"FN:{bpy.context.scene.frame_current}")
-                    bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
-                    break  # pass this frame (and not detect key events till next frame)
+        #             # add a strip (plain "brick_hit" action) to the track
+        #             strip = track.strips.new(name="brick_hit", start=bpy.context.scene.frame_current, action=action)
+        #             # # Shift the action to start at the current frame
+        #             strip.frame_start = bpy.context.scene.frame_current
+        #             strip.frame_end = strip.frame_start + (action.frame_range[1] - action.frame_range[0])
+        #             bpy.context.view_layer.objects.active = brick #Need this to make location changes into blender data
+        #             # Todo: 5/15 for some reason the brick is not getting deleted
+        #             # 5/15 bricks is recreated every frame from brick objects so removing from bricks list makes no sense:  bricks.remove(id=brick_id) #remove the hit brick from the array bricks so it wont get hit again
+        #             bpy.ops.object.select_all(action="DESELECT")
+        #             brick.select_set(True) # Select the object in 3D view
+        #             # hide the brick in 3D view
+        #             brick.name = brick.name + "_hit"
+        #             # no I don't delete the object, I want it to play hit animation first.  bpy.ops.object.delete() # Delete the object from blender data
+        #             # todo------------------------------------------
+
+        #             score_obj = bpy.data.objects.get('ui.Text.score')
+        #             score_obj["score"] += 1
+        #             bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+        #             score = score_obj["score"]
+        #             score_obj.data.body = str(f"Score:{score}")
+        #             bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+        #             FN_obj = bpy.data.objects.get('ui.Text.FN')
+        #             FN_obj.data.body = str(f"FN:{bpy.context.scene.frame_current}")
+        #             bpy.context.view_layer.objects.active = score_obj #Need this to make location changes into blender data
+        #             break  # pass this frame (and not detect key events till next frame)
         
-        # Avoids "AttributeError: 'Depsgraph' object has no attribute 'type'" when mouse cursor is not in 3D view
-        if isinstance(event, bpy.types.Event) == False:
-            return {'PASS_THROUGH'}
+        # hadle key inputs only once per (todo: calibrate) 60 flames (otherwise game fps goes way down)
+        if current_frame % 60 == 0:
+            # Avoids "AttributeError: 'Depsgraph' object has no attribute 'type'" when mouse cursor is not in 3D view
+            if isinstance(event, bpy.types.Event) == False:
+                return {'PASS_THROUGH'}
 
-        if event.type == 'ESC':
-                self.cancel(context)
-                return {'CANCELLED'}
+            if event.type == 'ESC':
+                    self.cancel(context)
+                    return {'CANCELLED'}
 
-        # Handle key events from both WebSocket and keyboard
-        if event.type == 'TIMER':
-            messages = asyncio.run(connect_websocket(self))  # Get WebSocket messages
-            for message in messages:
-                data = json.loads(message)
-                if data.get("key") in ['a', 'd']:
-                    self.handle_key_input(context, data["key"])
-        elif event.type in {'A', 'D'}:  # Handle regular keyboard events
-            self.handle_key_input(context, event.type)
+            # Handle key events from both WebSocket and keyboard
+            if event.type == 'TIMER':
+                messages = asyncio.run(connect_websocket(self))  # Get WebSocket messages
+                for message in messages:
+                    data = json.loads(message)
+                    if data.get("key") in ['a', 'd']:
+                        self.handle_key_input(context, data["key"])
+            elif event.type in {'A', 'D'}:  # Handle regular keyboard events
+                self.handle_key_input(context, event.type)
 
-        # self.path_util.update_path_bricks(bpy.context.scene.frame_current)
+            # self.path_util.update_path_bricks(bpy.context.scene.frame_current)
 
         return {'PASS_THROUGH'}
 
-    def handle_key_input(self, context, key):
+    def handle_key_input(self, context, key_input):
         # Todo: Add and play action "brick_hit" at the scene frame when the bike hits the brick (object distance < threshold)
         # Check if the bike is already moving
         # if moving skip the key event handling
