@@ -4,19 +4,14 @@
     <title>Uncirtain Days</title>
     <script type="text/javascript">
         // WebSocket connection
-        let socketConnected = false;
-        if socketConnected = false {
-            const webSocket = new WebSocket('ws://localhost:8080');
-            socketConnected = true;
+        let webSocket = new WebSocket('ws://localhost:8080');
 
-            // Key event listener
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'a' || event.key === 'd') {
-                    webSocket.send('key:' + event.key); 
-                }
-            });
-        }
-        const webSocket = new WebSocket('ws://localhost:8080');
+        // Key event listener
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'a' || event.key === 'd') {
+                webSocket.send('key:' + event.key); 
+            }
+        });
 
         webSocket.onopen = function(event) {
             console.log("WebSocket connection opened");
@@ -24,6 +19,8 @@
 
         webSocket.onclose = function(event) {
             console.log("WebSocket connection closed");
+            let webSocket = new WebSocket('ws://localhost:8080');
+            console.log("WebSocket connection reestablished");
         };
 
         webSocket.onerror = function(event) {

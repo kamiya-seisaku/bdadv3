@@ -36,6 +36,8 @@ wss.on('connection', (ws) => {
 
     ws.on('close', () => {
         console.log('WebSocket client disconnected');
+        webSocket = new WebSocket('ws://localhost:8080');
+        console.log('WebSocket client reestablished');
     });
 });
 

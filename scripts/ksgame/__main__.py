@@ -209,18 +209,34 @@ class ModalTimerOperator(bpy.types.Operator):
             # bike_mover["is_moving"] = False
             text_obj_key.data.body = str(f"bike_mover is not moving")
         else:
+            # key event handling
+            # Handle key events from both WebSocket and keyboard
+            key_input = "" # initialize key_input
+            if event.type == 'TIMER': # obtain WebSocket keystroke messages
+                messages = asyncio.run(connect_websocket(self))  # Get WebSocket messages
+                for message in messages:
+                    data = json.loads(message)
+                    if data.get("key") in ['a', 'd']:
+                        key_input = data["key"]
+            elif event.type in {'A', 'D'}: # obtain regular keyboard events
+                key_input = event.type
+            
+            if key_input == "": # if no key input, return
+                return
+
             # bike_mover["is_moving"] = True
             text_obj_key.data.body = str(f"bike_mover is moving")
-            et = event.type
             frame_number = bpy.context.scene.frame_current
             # to show the score in the 3D view, the body of the ui text object
             # is set according to the same object's custom property "score"
             text_obj_fn.data.body = str(f"FN:{frame_number}")
-            # key event handling
-            if et == 'A':
+
+
+
+            if key_input == 'A':
                 if bike_mover.location.x < 1:
                     bike_mover.location.x += 0.5
-            if et == 'D':
+            if key_input == 'D':
                 if bike_mover.location.x > -1:
                     bike_mover.location.x -= 0.5
             bpy.context.view_layer.objects.active = bike_mover #Need this to make location changes into blender data
