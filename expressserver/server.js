@@ -29,21 +29,21 @@ wss.on('connection', (ws) => {
 
     // [TODO]: To be removed: 
     // WebSocket client is to be implemented in blender 
-    ws.on('message', (message) => {
-        const message_str = String(message);
-        if (message_str.startsWith('key:')) {
-            const key_str = message_str.substring(4);
-            if (blenderProcess) {
-                blenderProcess.stdin.write(key_str + '\n');
-            }
-        }
-    });
+    // ws.on('message', (message) => {
+    //     const message_str = String(message);
+    //     if (message_str.startsWith('key:')) {
+    //         const key_str = message_str.substring(4);
+    //         if (blenderProcess) {
+    //             blenderProcess.stdin.write(key_str + '\n');
+    //         }
+    //     }
+    // });
 
-    ws.on('close', () => {
-        console.log('WebSocket client disconnected');
-        webSocket = new WebSocket('ws://localhost:8080');
-        console.log('WebSocket client reestablished');
-    });
+    // ws.on('close', () => {
+    //     console.log('WebSocket client disconnected');
+    //     webSocket = new WebSocket('ws://localhost:8080');
+    //     console.log('WebSocket client reestablished');
+    // });
 });
 
 // Read configuration from config.ini
