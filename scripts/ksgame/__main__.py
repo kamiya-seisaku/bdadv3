@@ -12,9 +12,9 @@ import sys
 import os
 import glob
 from mathutils import Vector
-import asyncio
+# import asyncio
 import websockets
-import json
+# import json
 # import subprocess
 
 def init_bricks():
@@ -61,26 +61,29 @@ def init_bricks():
             bpy.context.view_layer.objects.active = new_rect
             bpy.context.view_layer.update()
 
-async def connect_websocket(operator_instance):
-    uri = "ws://localhost:8080"  
-    messages = []
-    try:
-        async with websockets.connect(uri) as websocket:
-            while not operator_instance.cancel_requested:
-                try:
-                    message = await websocket.recv()
-                    messages.append(message)  # Store received messages
-                except websockets.ConnectionClosed:
-                    print("WebSocket connection closed.")
-                    break  # Exit the loop on connection closure
-    except (OSError, websockets.exceptions.WebSocketException) as e:
-        print(f"WebSocket connection error: {e}")
-    return messages  # Return all received messages
+# async def connect_websocket(operator_instance):
+#      = "ws://localhost:8080"  
+#     messages = []
+#     try:
+#         async with websockets.connect(uri) as websocket:
+#             while not operator_instance.cancel_requested:
+#                 try:
+#                     message = await websocket.recv()
+#                     messages.append(message)  # Store received messages
+#                 except websockets.ConnectionClosed:
+#                     print("WebSocket connection closed.")
+#                     break  # Exit the loop on connection closure
+#     except (OSError, websockets.exceptions.WebSocketException) as e:
+#         print(f"WebSocket connection error: {e}")
+#     return messages  # Return all received messages
 
 class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
     bl_label = "ks game"
     path_util = None
+
+    websocket = None # websocket connection. variable in class score should be sustained
+    uri = "ws://localhost:8080"  
 
     def modal(self, context, event):
         current_frame = bpy.context.scene.frame_current
@@ -93,14 +96,39 @@ class ModalTimerOperator(bpy.types.Operator):
             self.cancel(context)
             return {'CANCELLED'}
 
+        # Check for WebSocket connection (if not already connected)
+        if not self.websocket:
+            try:
+                self.websocket = websockets.connect(self.uri)
+                # Consider waiting for a successful connection before proceeding
+            except Exception as e:
+                print(f"WebSocket connection error: {e}")
+                return {'CANCELLED'}  # Or handle the error differently
+
+        # Receive WebSocket message (if connected)
+        if self.websocket:
+            try:
+                message = self.websocket.recv()
+                if message & message.startswith("key:"):
+                    key = message.substring(4)  # Python doesn't have substring, use slicing instead
+                    key = key.strip()  # Remove potential leading/trailing whitespace
+                    # Process the key (similar to key_handling)
+                    if key in ['A','D']:
+                        print(f"{key} pressed on webpage")
+                        self.key_handling(context, event, key)
+
+            except websockets.ConnectionClosed:
+                print("WebSocket connection closed.")
+                self.ws = None  # Mark connection as closed
+            except Exception as e:
+                print(f"WebSocket receive error: {e}")
+
         # Todo: need repeated key event handling: pass event while action "brick_hit" is playing in nla (getting better but not perfect)
         # Add and play action "brick_hit" at the scene frame when the bike hits the brick (object distance < threshold)
         if event.type in {'A', 'D'}:
             key_input = event.type
             self.key_handling(context, event, key_input)
             return {'PASS_THROUGH'}
-
-
 
         return {'PASS_THROUGH'}
 
