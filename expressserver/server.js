@@ -22,22 +22,22 @@ app.use('/img', express.static(imgDir));
 const wss = new WebSocket.Server({ port: webSocketPort });
 let blenderProcess = null;
 
-wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
+// wss.on('connection', (ws) => {
+//     console.log('WebSocket client connected');
 
-    ws.on('message', (message) => {
-        if (message.startsWith('key:')) {
-            const key = message.substring(4);
-            if (blenderProcess) {
-                blenderProcess.stdin.write(key + '\n');
-            }
-        }
-    });
+//     ws.on('message', (message) => {
+//         if (message.startsWith('key:')) {
+//             const key = message.substring(4);
+//             if (blenderProcess) {
+//                 blenderProcess.stdin.write(key + '\n');
+//             }
+//         }
+//     });
 
-    ws.on('close', () => {
-        console.log('WebSocket client disconnected');
-    });
-});
+//     ws.on('close', () => {
+//         console.log('WebSocket client disconnected');
+//     });
+// });
 
 // Read configuration from config.ini
 const config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
@@ -57,26 +57,6 @@ app.get('/latest-image', (req, res) => {
         res.status(404).send('Image not found'); 
     }
 });
-
-
-// // Start Blender process
-// blenderProcess = require('child_process').spawn(config.blender.exePath, [
-//     '-b', // Background mode (no UI)
-//     '-P', config.blender.launchscript, // Run the Python script
-//     config.blender.blendFile
-// ]);
-
-// blenderProcess.stdout.on('data', (data) => {
-//     console.log(`Blender output: ${data}`);
-// });
-
-// blenderProcess.stderr.on('data', (data) => {
-//     console.error(`Blender error: ${data}`);
-// });
-
-// blenderProcess.on('close', (code) => {
-//     console.log(`Blender process exited with code ${code}`);
-// });
 
 // Start Express server
 app.listen(port, () => {
