@@ -3,41 +3,48 @@
 <head>
     <title>Uncirtain Days</title>
     <script type="text/javascript">
-    while (true) { try {
-            // WebSocket connection
-            let webSocket = new WebSocket('ws://localhost:8080');
+    // let try_counter = 0;
+    // while (true) { try {
+        console.log("WebSocket connection attempt...");
+        try_counter += 1;
+        // if (try_counter > 10) {
+        //     console.error("Too many tries, giving up");
+        //     break;
+        // }
+        // WebSocket connection
+        let webSocket = new WebSocket('ws://localhost:8080');
 
-            // Key event listener
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'a' || event.key === 'd') {
-                    webSocket.send('key:' + event.key); 
-                }
-            });
-
-            webSocket.onopen = function(event) {
-                console.log("WebSocket connection opened");
-            };
-
-            webSocket.onclose = function(event) {
-                console.log("WebSocket connection closed");
-                let webSocket = new WebSocket('ws://localhost:8080');
-                console.log("WebSocket connection reestablished");
-            };
-
-            webSocket.onerror = function(event) {
-                console.error("WebSocket error:", event);
-            };
-
-            // Function to update the image source (not reload the page)
-            function refreshImage() {
-                const imgElement = document.getElementById('dynamic-image');
-                const timestamp = new Date().getTime();
-                imgElement.src = '/latest-image?' + timestamp;
+        // Key event listener
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'a' || event.key === 'd') {
+                webSocket.send('key:' + event.key); 
             }
-            setInterval(refreshImage, 500); 
-        } catch (error) {
-            console.error("Error:", error);
-    }}
+        });
+
+        webSocket.onopen = function(event) {
+            console.log("WebSocket connection opened");
+        };
+
+        webSocket.onclose = function(event) {
+            console.log("WebSocket connection closed");
+            let webSocket = new WebSocket('ws://localhost:8080');
+            console.log("WebSocket connection reestablished");
+        };
+
+        webSocket.onerror = function(event) {
+            console.error("WebSocket error:", event);
+        };
+
+        // Function to update the image source (not reload the page)
+        function refreshImage() {
+            const imgElement = document.getElementById('dynamic-image');
+            const timestamp = new Date().getTime();
+            imgElement.src = '/latest-image?' + timestamp;
+        }
+        setInterval(refreshImage, 500); 
+    //     } catch (error) {
+    //         console.error("Error:", error);
+    // }}
     </script>
 </head>
 <body>
