@@ -22,14 +22,19 @@ app.use('/img', express.static(imgDir));
 const wss = new WebSocket.Server({ port: webSocketPort });
 let blenderProcess = null;
 
+// WebSocket client is to be implemented in blender 
+// here pass through message and just console log key for now
 wss.on('connection', (ws) => {
     console.log('WebSocket client connected');
 
+    // [TODO]: To be removed: 
+    // WebSocket client is to be implemented in blender 
     ws.on('message', (message) => {
-        if (message.startsWith('key:')) {
-            const key = message.substring(4);
+        const message_str = String(message);
+        if (message_str.startsWith('key:')) {
+            const key_str = message_str.substring(4);
             if (blenderProcess) {
-                blenderProcess.stdin.write(key + '\n');
+                blenderProcess.stdin.write(key_str + '\n');
             }
         }
     });
